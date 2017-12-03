@@ -41,7 +41,7 @@
 (defun visited-all-vertices (visited total-vertices)
   (= (hash-table-count visited) total-vertices))
 
-(defun minimum-path (start graph total-vertices decision-function)
+(defun best-path (start graph total-vertices decision-function)
   (labels 
       ((recur (start visited distance)
          (if (visited-all-vertices visited total-vertices)
@@ -66,14 +66,14 @@
 (defun hamiltonian-path (graph vertices decision-function)
   (let ((total-vertices (length vertices)))
     (labels ((find-distance ()
-               (let (min-distance)
+               (let (best-distance)
                  (loop for vertex in vertices
                     do (let ((distance 
-                              (minimum-path vertex graph total-vertices decision-function)))
-                         (if (or (not min-distance)
-                                 (and distance (funcall decision-function distance min-distance)))
-                             (setf min-distance distance))))
-                 (or min-distance 0))))
+                              (best-path vertex graph total-vertices decision-function)))
+                         (if (or (not best-distance)
+                                 (and distance (funcall decision-function distance best-distance)))
+                             (setf best-distance distance))))
+                 (or best-distance 0))))
       (find-distance))))
 
 (defun solve (filename decision-function)
