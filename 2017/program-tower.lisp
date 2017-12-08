@@ -78,12 +78,16 @@
        (balanced-children node tree sub-weights)
        (odd-one-out node tree upside-down sub-weights)))
 
-(defun find-correct-weight (node tree upside-down)
-  (let ((parent (gethash node upside-down)))
+(defun find-correct-weight (node tree upside-down sub-weights)
+  (let ((parent (gethash node upside-down))
+        (sub-weight (subtree-weight node tree sub-weights)))
     (destructuring-bind (weight children) (gethash parent tree)
-      (loop for child in children
-         when (/= (car (gethash child tree)) weight)
-         do (return-from find-correct-weight (car (gethash child tree))))
+      (loop for sibling in children
+           when (/= (subtree-weight sibling tree sub-weights) sub-weight)
+           do (progn 
+                (return-from find-correct-weight 
+                  (+ (car (gethash node tree))
+                     (- (subtree-weight sibling tree sub-weights) sub-weight)))))
       weight)))
 
 (defun find-root (node upside-down)
@@ -106,7 +110,7 @@
     (traverse-tree root tree (lambda (node)
                                (if (has-wrong-weight node tree upside-down sub-weights)
                                    (setf wrong-node node))))
-    (values wrong-node (find-correct-weight wrong-node tree upside-down))))
+    (values wrong-node (find-correct-weight wrong-node tree upside-down sub-weights))))
 
 (defun find-top (upside-down)
   (loop for k being the hash-keys of upside-down
