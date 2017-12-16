@@ -55,43 +55,42 @@
     (when f
       (parse-input (read-line f nil nil)))))
 
-(defun part-1-solver (filename programs-str)
-  (let ((programs (map 'vector #'identity programs-str))
-        (instructions (get-instructions filename)))
+(defun find-loop (instructions programs-str)
+  (let ((table (make-hash-table :test 'equal))
+        (len 0))
+    (loop until (gethash programs-str table)
+       do (progn
+            (setf (gethash programs-str table) t)
+            (setf programs-str (apply-instructions instructions programs-str))
+            (incf len)))
+    len))
+
+(defun apply-instructions (instructions programs-str)
+  (let ((programs (map 'vector #'identity programs-str)))
     (loop for instruction across instructions
-       do (setf programs (funcall instruction programs)))
+     do (setf programs (funcall instruction programs)))
     (map 'string #'identity programs)))
 
-(defun find-new-positions (s1 s2)
-  (let ((table (make-hash-table)))
-    (loop for i from 0 to (- (length s1) 1)
-       do (setf (gethash i table) (position (aref s1 i) s2)))
-    (let ((new-positions (make-array (hash-table-count table))))
-      (loop for k being the hash-keys of table using (hash-value v)
-         do (setf (aref new-positions k) v))
-      new-positions)))
+(defun part-1-solver (filename programs-str)
+  (let ((instructions (get-instructions filename)))
+    (apply-instructions instructions programs-str)))
 
-(defun combine-permutations (p1 p2)
-  (apply-permutation p1 p2))
+(defun find-loop-len ()
+  (let ((instructions (get-instructions "dancing-programs-input.txt"))
+        (programs-str "abcdefghijklmnop"))
+    (find-loop instructions programs-str)))
 
-(defun repeat-permutation (p repeats)
-  (if (= repeats 0)
-      p
-      (multiple-value-bind (quotient remainder) (floor repeats 2)
-        (let* ((repeated (combine-permutations p p))
-               (recurred (repeat-permutation repeated quotient)))
-          (if (= remainder 0)
-              recurred
-              (combine-permutations recurred p))))))
-
-(defun apply-permutation (p vec)
-  (map 'vector (lambda (position) (aref vec position)) p))
-
-(defun part-2-solver (filename programs-str repeats)
-  (let* ((new-programs-str (part-1-solver filename programs-str))
-         (initial-permutation (find-new-positions programs-str new-programs-str))
-         (final-permutation (repeat-permutation initial-permutation repeats)))
-    (apply-permutation final-permutation (map 'vector #'identity programs-str))))
+(defun solution-part-2 ()
+  (let* ((instructions (get-instructions "dancing-programs-input.txt"))
+         (programs-str "abcdefghijklmnop")
+         (loop-len (find-loop instructions programs-str))
+         (required-iters (rem 1000000000 loop-len)))
+    (labels ((iter (programs-str iters)
+               (if (= iters 0)
+                   programs-str
+                   (iter (apply-instructions instructions programs-str) 
+                         (- iters 1)))))
+      (iter programs-str required-iters))))
 
 (defun test-part-1 ()
   (part-1-solver "dancing-programs-test-input" "abcde"))
