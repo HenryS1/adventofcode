@@ -20,6 +20,23 @@
                      (insert-elements (+ i 1))))))
       (insert-elements 1))))
 
+(defun insert-position (position len steps)
+  (mod (+ position steps) len))
+
+(defun step-insert (steps stop-value)
+  (labels ((recur (i position value-after-zero)
+             (if (= i stop-value)
+                 value-after-zero
+                 (let* ((new-position (insert-position position i steps))
+                        (new-after-zero (if (= new-position 0) i value-after-zero)))
+                   (recur (+ i 1) (+ new-position 1) new-after-zero)))))
+    (recur 1 0 0)))
+
+(defun test-value-for-part-2 ()
+  (insert-and-spin 3 2018))
+
+(defun test-part-2 ()
+  (step-insert 3 2018))
 
 (defun part-1-solver (steps)
   (cadr (insert-and-spin steps 2018)))
@@ -31,4 +48,4 @@
   (part-1-solver 314))
 
 (defun solution-part-2 ()
-  (part-2-solver 314))
+  (step-insert 314 50000001))
