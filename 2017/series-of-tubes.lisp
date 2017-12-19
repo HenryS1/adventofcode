@@ -77,7 +77,6 @@
                 (return-from find-start (cons 0 i))))))
 
 (defun is-neighbour (cell row col graph)
-;  (format t "is neighbour ~a ~a ~a ~a~%" cell row col (gethash (cons row col) graph))
   (find cell (gethash (cons row col) graph) :test 'equal))
 
 (defun move-down (row col graph)
@@ -117,7 +116,6 @@
               nil))))
 
 (defun move (row col graph direction)
-;  (format t "move ~a ~a ~a~%" row col direction)
   (case direction
     (up (move-up row col graph))
     (down (move-down row col graph))
@@ -128,7 +126,7 @@
   (let (seen (steps 0))
     (labels ((recur (row col direction)
                (let ((entry (get-from-grid row col grid)))
-;                 (format t "current-cell ~a ~a~%" row col)
+                 (incf steps)
                  (if (alpha-char-p entry)
                      (push entry seen))
                  (multiple-value-bind (next-row next-col next-direction)
