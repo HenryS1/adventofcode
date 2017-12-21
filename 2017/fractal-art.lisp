@@ -53,9 +53,9 @@
                     (gethash flipped patterns))
        do (progn (setf key (rotate-key key))
                  (setf flipped (rotate-key flipped))))
-    (if (gethash key patterns)
-        (format t "~a~%" key)
-        (format t "~a~%" flipped))
+    ;; (if (gethash key patterns)
+    ;;     (format t "~a~%" key)
+    ;;     (format t "~a~%" flipped))
     (or (gethash key patterns)
         (gethash flipped patterns))))
 
@@ -67,10 +67,10 @@
     (reverse key)))
 
 (defun expand-pattern (grid new-grid patterns size)
-  (format t "here0~%")
+;  (format t "here0~%")
     (destructuring-bind (rows columns) (array-dimensions grid)
-      (format t "rows ~a~%" rows)
-      (format t "size ~a~%" size)
+ ;     (format t "rows ~a~%" rows)
+  ;    (format t "size ~a~%" size)
       (loop for r = 0 then (+ r size) 
          while (< r (- rows 1))
          do (loop for c = 0 then (+ c size)
@@ -148,7 +148,7 @@
 
 (defun expand (iterations patterns)
   (labels ((recur (remaining grid)
-             (format t "~a~%" grid)
+;             (format t "~a~%" grid)
              (if (= remaining 0)
                  grid
                  (recur (- remaining 1) (expand-grid grid patterns)))))
