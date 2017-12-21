@@ -1,17 +1,13 @@
 (ql:quickload 'cl-ppcre)
 
 (defun apply-pattern (row column pattern grid size)
-;  (format t "apply size blah blah ~a ~a ~a~% ~a~%" row column (+ size 1) pattern)
   (loop for r from row to (+ row size)
      do (loop for c from column to (+ column size)
            do (progn 
-;                (format t "r c ~a ~a~%" r c)
                 (setf (aref grid r c)
                     (get-entry r c pattern (+ size 1)))))))
 
 (defun get-entry (row column pattern size)
-  ;; (format t "entry ~a ~a ~a~%" (mod row size) (mod column size)
-  ;;         (aref pattern (+ (* (mod row size) size) (mod column size))))
   (aref pattern (+ (* (mod row size) size) (mod column size))))
 
 (defun rotate-3-key (key)
@@ -48,14 +44,10 @@
 (defun lookup-pattern (grid row col size patterns)
   (let* ((key (make-key grid row col size))
          (flipped (flip-key key)))
-;    (format t "key ~a~%" key)
     (loop until (or (gethash key patterns)
                     (gethash flipped patterns))
        do (progn (setf key (rotate-key key))
                  (setf flipped (rotate-key flipped))))
-    ;; (if (gethash key patterns)
-    ;;     (format t "~a~%" key)
-    ;;     (format t "~a~%" flipped))
     (or (gethash key patterns)
         (gethash flipped patterns))))
 
@@ -67,10 +59,7 @@
     (reverse key)))
 
 (defun expand-pattern (grid new-grid patterns size)
-;  (format t "here0~%")
     (destructuring-bind (rows columns) (array-dimensions grid)
- ;     (format t "rows ~a~%" rows)
-  ;    (format t "size ~a~%" size)
       (loop for r = 0 then (+ r size) 
          while (< r (- rows 1))
          do (loop for c = 0 then (+ c size)
@@ -148,7 +137,6 @@
 
 (defun expand (iterations patterns)
   (labels ((recur (remaining grid)
-;             (format t "~a~%" grid)
              (if (= remaining 0)
                  grid
                  (recur (- remaining 1) (expand-grid grid patterns)))))
