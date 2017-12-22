@@ -12,12 +12,13 @@
 
 (defun rotate-3-key (key)
   (destructuring-bind (a b c 
-                        d e f
-                        g h i) key
+                       d e f
+                       g h i) key
     (list g d a h e b i f c)))
 
 (defun rotate-2-key (key)
-  (destructuring-bind (a b c d) key
+  (destructuring-bind (a b 
+                       c d) key
     (list c a d b)))
 
 (defun rotate-key (key)
@@ -71,9 +72,6 @@
                                    pattern new-grid 
                                    size))))
       new-grid))
-
-(defun alternate-size (current)
-  (if (= current 2) 3 2))
 
 (defun convert-coord (coord size new-size)
   (* (floor coord size) (floor new-size size)))
