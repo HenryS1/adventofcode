@@ -60,6 +60,21 @@
                           (lambda () (incf mul-count)))))
     mul-count))
 
+(defun print-registers (registers)
+  (loop for k being the hash-keys of registers using (hash-value v)
+     do (format t "~a ~a~%" k v)))
+
+(defun part-2-solver (instructions)
+  (let ((index 0)
+        (registers (make-hash-table)))
+    (setf (gethash 'a registers) 1)
+    (loop while (not (terminated index instructions))
+       do (progn 
+            (format t "instruction ~a~%" (aref instructions index))
+;            (print-registers registers)
+            (setf index (interpret-next index instructions registers (lambda ())))))
+    (gethash 'h registers)))
+
 (defun read-instruction (line)
   (let (*read-eval*)
     (with-input-from-string (in line)

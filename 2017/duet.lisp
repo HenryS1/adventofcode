@@ -55,8 +55,6 @@
   (funcall rcv-callback x registers))
 
 (defun jgz-reg (x y registers)
-;  (format t "jmp ~a ~a~%" x y)
-;  (format t "reg value ~a~%" (get-value x registers))
   (if (> (get-value x registers) 0)
       (get-value y registers)
       nil))
@@ -112,8 +110,6 @@
                  (and (not (terminated-core core1 instructions))
                       (funcall is-waiting1 instructions)
                       (terminated-core core2 instructions)))))
-        (if locked 
-            (format t "deadlocked~%"))
         locked))))
 
 (defun terminated-core (core instructions)
@@ -148,7 +144,6 @@
                (and (eq (car (aref instructions index)) 'rcv)
                     (empty-q rcv-q)))
              (consume-instruction (instructions)
-;               (format t "id ~a~%" id)
                (if (not (terminated instructions))
                    (setf index (interpret-next (aref instructions index) index
                                            registers #'snd-val #'rcv-val))))
