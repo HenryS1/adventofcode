@@ -2,9 +2,7 @@
   (if (numberp x)
       x
       (let ((lookup (gethash x registers)))
-        (if lookup
-            lookup 
-            0))))
+        (if lookup lookup 0))))
 
 (defun set-reg (x y registers)
   (setf (gethash x registers) 
@@ -69,7 +67,6 @@
        do (setf index (interpret-next index instructions registers 
                           (lambda () (incf mul-count)))))
     mul-count))
-
 
 (defun part-2-solver (instructions)
   (let ((index 0)
