@@ -28,6 +28,11 @@
 (defun sub-reg (x y registers)
   (apply-reg-op x y registers #'-))
 
+(defun jez-reg (x y registers)
+  (if (= (get-value x registers) 0)
+      (get-value y registers)
+      nil))
+
 (defun jnz-reg (x y registers)
   (if (/= (get-value x registers) 0)
       (get-value y registers)
@@ -39,12 +44,16 @@
     (case (car instruction)
       (set (set-reg (cadr instruction) (caddr instruction) registers))
       (sub (sub-reg (cadr instruction) (caddr instruction) registers))
+      (mod (mod-reg (cadr instruction) (caddr instruction) registers))
       (mul (progn (funcall callback)
                   (mul-reg (cadr instruction) (caddr instruction) registers)))
       (jnz (let ((jmp (jnz-reg (cadr instruction) (caddr instruction) registers)))
              (if jmp
                  (setf next-index (+ index jmp)))))
-      (otherwise (error "unknown instruction")))
+      (jez (let ((jmp (jez-reg (cadr instruction) (caddr instruction) registers)))
+             (if jmp
+                 (setf next-index (+ index jmp)))))
+      (otherwise (error (format nil "unknown instruction ~a" instruction))))
     next-index))
 
 (defun terminated (index instructions)
@@ -91,6 +100,9 @@
 
 (defun test-instructions ()
   (collect-instructions "duet-test-2-input"))
+
+(defun optimized-instructions ()
+  (collect-instructions "coprocessor-optimized"))
 
 (defun real-instructions ()
   (collect-instructions "coprocessor-input.txt"))
