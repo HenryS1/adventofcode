@@ -33,11 +33,8 @@
             0))))
 
 (defun set-reg (x y registers)
-;  (format t "set: ~a ~a~%" x (get-value y registers))
   (setf (gethash x registers) 
-        (get-value y registers))
-;  (format t "set value is ~a~%" (gethash x registers))
-  )
+        (get-value y registers)))
 
 (defun apply-reg-op (x y registers binop)
   (setf (gethash x registers)
@@ -83,7 +80,6 @@
 
 (defun interpret-next (instruction instruction-index registers snd-callback rcv-callback)
   (let ((next-index (+ instruction-index 1)))
-;    (format t "instruction ~a~%" instruction)
     (case (car instruction)
         (snd (snd-reg (cadr instruction) registers snd-callback))
         (set (set-reg (cadr instruction) (caddr instruction) registers))
@@ -95,7 +91,6 @@
         (jgz (let ((jmp (jgz-reg (cadr instruction) (caddr instruction) registers)))
                (if jmp
                    (progn 
-;                     (format t "jumping ~a~%" jmp)
                      (setf next-index (+ instruction-index jmp))))))
         (otherwise (error "unexpected instruction")))
     next-index))
