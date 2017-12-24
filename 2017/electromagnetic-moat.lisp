@@ -41,21 +41,35 @@
       (cdr edge)
       (car edge)))
 
-(defun current-strongest (current graph)
+(defun find-longest (current graph)
+  (let ((longest-bridges (cons 0 nil)))
+    (labels ((dfs (current strength trail len)
+               (loop for edge in (edges current graph)
+                  when (is-available edge)
+                  do (progn 
+                       (decf-available edge)
+                       (let ((total-strength (+ strength (edge-strength edge)))
+                             (total-length (+ len 1)))
+                         (if (> total-length (car longest-bridges))
+                             (setf longest-bridges (cons total-length (list total-strength)))
+                             (if (= total-length (car longest-bridges))
+                                 (push total-strength (cdr longest-bridges))))
+                         (dfs (other current (car edge)) total-strength 
+                              (cons current trail) total-length)
+                         (incf-available edge))))))
+      (dfs current 0 nil 0)
+      (reduce #'max (cdr longest-bridges)))))
+
+(defun find-strongest (current graph)
   (let ((best-strength-for-component 0))
     (labels ((dfs (current strength trail)
-               ;; (format t "current ~a~%" current)
-               ;; (format t "strength ~a~%" strength)
-               ;; (format t "trail ~a~%" trail)
                (loop for edge in (edges current graph)
                   when (is-available edge)
                   do (progn 
                        (decf-available edge)
                        (let ((total-strength (+ strength (edge-strength edge))))
                          (if (> total-strength best-strength-for-component)
-                             (progn 
-;                               (format t "strength ~a~%" total-strength)
-                               (setf best-strength-for-component total-strength)))
+                             (setf best-strength-for-component total-strength))
                          (dfs (other current (car edge)) total-strength (cons current trail))
                          (incf-available edge))))))
       (dfs current 0 nil)
@@ -65,7 +79,7 @@
   (let ((components (get-pins graph))
         (max-strength 0))
     (loop for component in components 
-       do (let ((current-strength (current-strongest component graph)))
+       do (let ((current-strength (find-strongest component graph)))
             (if (> current-strength max-strength)
                 (setf max-strength current-strength))))
     max-strength))
@@ -98,3 +112,8 @@
 (defun test-graph ()
   (build-graph "electromagnetic-moat-test-input"))
 
+(defun solution-part-1 ()
+  (find-strongest 0 (real-graph)))
+
+(defun solution-part-2 ()
+  (find-longest 0 (real-graph)))
