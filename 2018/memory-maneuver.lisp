@@ -19,10 +19,8 @@
             start-position)))
 
 (defun sum-metadata (node)
-  (let ((sm 0))
-    (loop for child across (car node) 
-       do (incf sm (sum-metadata child)))
-    (incf sm (reduce #'+ (cdr node)))))
+  (+ (reduce #'+ (cdr node))
+     (reduce #'+ (map 'vector #'sum-metadata (car node)))))
 
 (defun read-input ()
   (car (read-lines "memory-maneuver-input.txt" 
@@ -43,7 +41,7 @@
       (incf sm (reduce #'+ metadata)))
     sm))
 
-(defun test ()
+(defun test-1 ()
   (sum-metadata (read-tree 0 (vector 2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2))))
 
 (defun test-2 ()
