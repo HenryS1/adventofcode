@@ -65,5 +65,3 @@
             (setf (gethash k table) v)))
     table))
 
-(defun repeat-l (a n)
-  )
