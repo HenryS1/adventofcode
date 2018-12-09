@@ -65,3 +65,16 @@
             (setf (gethash k table) v)))
     table))
 
+(defun frequencies (seq)
+  (let ((table (make-hash-table :test 'equal)))
+    (if (vectorp seq)
+        (loop for e across seq
+           do (when (not (gethash e table))
+                (setf (gethash e table) 0))
+             (incf (gethash e table)))
+        (loop for e in seq
+           do (when (not (gethash e table))
+                (setf (gethash e table) 0))
+             (incf (gethash e table))))
+    table))
+
