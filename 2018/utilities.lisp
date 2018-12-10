@@ -47,7 +47,7 @@
      do (format t "~a ~a~%" k v)))
 
 (defun make-set (seq)
-  (let ((table (make-hash-table)))
+  (let ((table (make-hash-table :test 'equal)))
     (if (vectorp seq)
         (loop for el across seq
            do (setf (gethash el table) t))
@@ -57,6 +57,9 @@
 
 (defun hash-keys (table)
   (loop for k being the hash-keys of table collect k))
+
+(defun hash-values (table)
+  (loop for v being the hash-values of table collect v))
 
 (defun hash-from-alist (al)
   (let ((table (make-hash-table :test 'equal)))
@@ -78,3 +81,15 @@
              (incf (gethash e table))))
     table))
 
+(defun make-table (seq make-key)
+  (let ((table (make-hash-table :test 'equal)))
+    (if (vectorp seq)
+        (loop for e across seq
+           do (let ((key (funcall make-key e)))
+                (when (not (gethash key table))
+                  (setf (gethash key table) e))))
+        (loop for e in seq
+           do (let ((key (funcall make-key e)))
+                (when (not (gethash key table))
+                  (setf (gethash key table) e)))))
+    table))
