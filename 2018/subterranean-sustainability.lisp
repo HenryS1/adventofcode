@@ -97,9 +97,7 @@
     state-with-index))
 
 (defun loop-productions (n rules state-with-index)
-  (loop for i from 1 to n do (update-state rules state-with-index)
-       (format t "new seq ~a ~a ~a~%" i (coerce (car state-with-index) 'string) (cdr state-with-index))
-     do (format t "SUM ~a~%" (sum-numbers state-with-index)))
+  (loop for i from 1 to n do (update-state rules state-with-index))
   state-with-index)
 
 (defun test ()
