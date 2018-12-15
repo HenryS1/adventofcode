@@ -119,8 +119,6 @@
     (let ((result (loop-productions 20 rules state-with-index)))
       (sum-numbers result)))) 
 
-
-
 (defun solution-part-2 ()
   ;; eventually stabilises and increases by 69 each iteration
   (+ 16068 (* 69 (- 50000000000 200))))

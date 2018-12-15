@@ -1,3 +1,5 @@
+(load "queue.lisp")
+
 (defun hash-union (one other)
   (let ((new-set (make-hash-table :test 'equal)))
     (loop for k being the hash-keys of one
@@ -93,3 +95,13 @@
                 (when (not (gethash key table))
                   (setf (gethash key table) e)))))
     table))
+
+(defun take (n seq)
+  (if (vectorp seq)
+      (loop for e across seq
+         for i from 1 to n
+         collect e)
+      (loop for e in seq
+         for i from 1 to n
+         collect e)))
+
