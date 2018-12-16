@@ -96,6 +96,9 @@
                   (setf (gethash key table) e)))))
     table))
 
+(defun append-to-symbol (sym str)
+  (intern (concatenate 'string (symbol-name sym) str)))
+
 (defun take (n seq)
   (if (vectorp seq)
       (loop for e across seq
@@ -105,3 +108,13 @@
          for i from 1 to n
          collect e)))
 
+(defun drop (n l)
+  (loop for rest = l then (cdr rest)
+     for i from 1 to n
+     finally (return rest)))
+
+(defun take-drop (n l)
+  (loop for rest = l then (cdr rest)
+     for i from 1 to n
+     collect (car rest) into taken
+     finally (return (values taken rest))))
