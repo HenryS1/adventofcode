@@ -55,8 +55,7 @@
     (loop with abas = (collect-abas outside)
        with babs = (collect-abas inside)
        for aba being the hash-keys of abas
-       when (gethash (coerce (vector (aref aba 1) (aref aba 0) (aref aba 1)) 'string)
-                     babs)
+       when (gethash (coerce (vector (aref aba 1) (aref aba 0) (aref aba 1)) 'string) babs)
        return t
        finally (return nil))))
 
