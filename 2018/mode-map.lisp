@@ -1,0 +1,207 @@
+(load "priority-queue.lisp")
+
+(defun up (position) 
+  (cons (car position) (1- (cdr position))))
+
+(defun down (position)
+  (cons (car position) (1+ (cdr position))))
+
+(defun left (position)
+  (cons (1- (car position)) (cdr position)))
+
+(defun right (position)
+  (cons (1+ (car position)) (cdr position)))
+
+(defun erosion-level (depth position target erosion-levels)
+  (if (gethash position erosion-levels)
+      (gethash position erosion-levels)
+      (let ((level (mod (+ (geologic-index depth position target erosion-levels) depth)
+                        20183)))
+        (setf (gethash position erosion-levels) level)
+        level)))
+
+(defun geologic-index (depth position target erosion-levels)
+  (cond ((equal position target) 0)
+        ((= (car position) 0)
+         (* (cdr position) 48271))
+        ((= (cdr position) 0)
+         (* (car position) 16807))
+        (t (* (erosion-level depth (left position) target erosion-levels)
+              (erosion-level depth (up position) target erosion-levels)))))
+
+(defun region-type (depth position target erosion-levels)
+  (case (mod (erosion-level depth position target erosion-levels) 3)
+    (0 'rocky)
+    (1 'wet)
+    (2 'narrow)))
+
+(defun risk-level (start target depth)
+  (loop with risk = 0
+     with erosion-levels = (make-hash-table :test 'equal)
+     for y from (cdr start) to (cdr target)
+     do (loop for x from (car start) to (car target)
+           do (case (region-type depth (cons x y) target erosion-levels)
+                (wet (incf risk 1))
+                (narrow (incf risk 2))))
+     finally (return risk)))
+
+(defun solution-part-1 ()
+  (risk-level (cons 0 0) (cons 9 758) 8103))
+
+(defparameter *equipment* '(climbing torch neither))
+
+(defun other-equipment (equipment) 
+  (case equipment
+    (climbing '(torch neither))
+    (torch '(climbing neither))
+    (neither '(climbing torch))))
+
+(defun available (equipment position map)
+  (case (funcall map position)
+    (rocky (member equipment '(climbing torch)))
+    (wet (member equipment '(climbing neither)))
+    (narrow (member equipment '(torch neither)))))
+
+;; (defun previous-cost (map equipment position min-cost-to min-for-column min-for-row)
+;;   (destructuring-bind (one another) (others equipment) 
+;;     (min (if (available one position map) 
+;;              (+ 8 (min-cost map one position min-cost-to min-for-column min-for-row))
+;;              99999999)
+;;          (if (available another position map)
+;;              (+ 8 (min-cost map another position min-cost-to min-for-column min-for-row))
+;;              99999999)
+;;          (if (available equipment position map)
+;;              (1+ (min-cost map equipment position min-cost-to min-for-column min-for-row))
+;;              99999999))))
+
+(defun compare-cons (one other)
+  (< (car one) (car other)))
+
+(defun available-equipment (position map)
+  (case (funcall map position)
+    (rocky '(climbing torch))
+    (wet '(climbing neither))
+    (narrow '(torch neither))))
+
+(defun update-distance (el min-cost-to)
+  (destructuring-bind (distance position equipment) el
+    (when (or (not (gethash (cons position equipment) min-cost-to))
+              (< distance (gethash (cons position equipment) min-cost-to)))
+      (setf (gethash (cons position equipment) min-cost-to) distance))))
+
+(defun available-neighbours (map position)
+  (loop with nbrs = nil
+     for neighbour in (list (left position) (up position) (right position) (down position))
+     do (loop for equipment in (available-equipment position map)
+           do (push (cons equipment neighbour) nbrs))
+     finally (return nbrs)))
+
+(defun in-bounds (neighbour)
+  (and (>= (cadr neighbour) 0)
+       (>= (cddr neighbour) 0)))
+
+(defun enqueue-neighbours (q map el min-cost-to neighbour-fun)
+  (destructuring-bind (distance position equipment) el
+    (loop for neighbour in (funcall neighbour-fun map position)
+       when (in-bounds neighbour)
+       do (if (not (equal equipment (car neighbour)))
+              (when (or (not (gethash (cons neighbour equipment) min-cost-to))
+                        (< (+ 8 distance) (gethash (cons neighbour equipment) min-cost-to)))
+                (insert-pq (list (+ 8 distance) (cdr neighbour) (car neighbour)) q)
+                (setf (gethash (cons neighbour equipment) min-cost-to) (+ 8 distance)))
+              (when (or (not (gethash (cons neighbour equipment) min-cost-to))
+                        (< (1+ distance) (gethash (cons neighbour equipment) min-cost-to)))
+                (insert-pq (list (1+ distance) (cdr neighbour) (car neighbour)) q)
+                (setf (gethash (cons neighbour equipment) min-cost-to) (1+ distance)))))))
+
+(defun greedy-neighbours (map position)
+  (loop with nbrs = nil
+     for neighbour in (list (left position) (up position))
+     do (loop for equipment in (available-equipment position map)
+           do (push (cons equipment neighbour) nbrs))
+     finally (return nbrs)))
+
+(defun find-lower-bound (map target)
+  (min-cost map target #'greedy-neighbours))
+
+(defun min-cost (map target neighbour-fun &optional (lower-bound 9999999))
+  (let* ((q (make-pq #'compare-cons))
+         (min-cost-to (make-hash-table :test 'equal))
+         (destination-key (cons (cons 0 0) 'torch)))
+    (insert-pq (list 0 target 'torch) q)
+    (loop for el = (pop-pq q)
+;;       do (format t "LOWER BOUND ~a~%" lower-bound)
+       while el
+;;       do (format t "EL ~a~%" el)
+       when (and (< (car el) lower-bound)
+                 (or (not (gethash destination-key min-cost-to)) 
+                     (< (car el) (gethash destination-key min-cost-to)))
+                 (or (not (gethash (cons (car el) (caddr el)) min-cost-to))
+                     (<= (car el) (gethash (cons (car el) (caddr el)) min-cost-to))))
+       do (update-distance el min-cost-to)
+         (enqueue-neighbours q map el min-cost-to neighbour-fun))
+    (gethash (cons (cons 0 0) 'torch) min-cost-to)))
+
+;; (defun min-cost (map equipment position min-cost-to min-for-column min-for-row)
+;;   (format t "POSITION ~a ~a~%" position equipment)
+;;   (cond ((equal position (cons 0 0)) 0)
+;;         ((gethash (cons position equipment) min-cost-to)
+;;          (format t "FOUND IN CACHE~%")
+;;          (gethash (cons position equipment) min-cost-to))
+;;         (t (progn 
+;;              (format t "RECURSING ~%")
+;;             (let* ((left-cost (progn
+;;                                 (format t "GOING LEFT~%")
+;;                                 (previous-cost map equipment (if (> (car position) 0)
+;;                                                                  (left position) 
+;;                                                                  (up position))
+;;                                                min-cost-to min-for-column min-for-row)))
+;;                    (up-cost (progn 
+;;                               (format t "GOING UP~%")
+;;                               (previous-cost map equipment (if (> (cdr position) 0)
+;;                                                                (up position)
+;;                                                                (left position))
+;;                                              min-cost-to min-for-column min-for-row)))
+;;                    (down-cost (if (and (gethash (cdr position) min-for-row)
+;;                                        (< (gethash (cdr position) min-for-row) left-cost)
+;;                                        (< (gethash (cdr position) min-for-row) up-cost))
+;;                                   (progn
+;;                                     (format t "CHECKING DOWN~%")
+;;                                     (previous-cost map equipment (down position) 
+;;                                                    min-cost-to min-for-column min-for-row))
+;;                                   99999999))
+;;                    (right-cost (if (and (gethash (car position) min-for-column)
+;;                                         (< (gethash (car position) min-for-column) left-cost)
+;;                                         (< (gethash (car position) min-for-column) up-cost))
+                                  
+;;                                    (progn
+;;                                      (format t "CHECKING RIGHT~%")
+;;                                      (previous-cost map equipment (right position)
+;;                                                     min-cost-to min-for-column min-for-row))
+;;                                    99999999))
+;;                    (overall-min (min left-cost up-cost right-cost down-cost)))
+;;               (when (or (not (gethash (car position) min-for-column)) 
+;;                         (< overall-min (gethash (car position) min-for-column)))
+;;                 (setf (gethash (car position) min-for-column) overall-min))
+;;               (when (or (not (gethash (cdr position) min-for-row))
+;;                         (< overall-min (gethash (cdr position) min-for-row)))
+;;                 (setf (gethash (cdr position) min-for-row) overall-min))
+;;               (setf (gethash (cons position equipment) min-cost-to) overall-min)
+;;               (format t "RETURNING ~a FOR ~a ~a~%" overall-min position equipment)
+;;               overall-min)))))
+
+(defun test-2 ()
+  (let ((depth 510)
+        (target (cons 10 10))
+        (erosion-levels (make-hash-table :test 'equal)))
+    (labels ((map-fun (position) (region-type depth position target erosion-levels)))
+      (min-cost #'map-fun target #'available-neighbours))))
+
+;(cons 9 758) 8103
+
+(defun solution-part-2 ()
+  (let ((depth 8103)
+        (target (cons 9 758))
+        (erosion-levels (make-hash-table :test 'equal)))
+    (labels ((map-fun (position) (region-type depth position target erosion-levels)))
+      (min-cost #'map-fun target #'available-))))
