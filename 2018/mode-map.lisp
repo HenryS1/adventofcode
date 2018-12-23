@@ -99,7 +99,7 @@
                 (setf (gethash neighbour min-cost-to) (1+ distance))
                 (setf (gethash neighbour path-to) (cons position equipment)))))))
 
-(defun greedy-neighbours (bounds)
+(defun bounded-neighbours (bounds)
   (lambda (map position)
     (loop with nbrs = nil
        for neighbour in (list (left position) (up position) (right position) (down position))
@@ -107,9 +107,6 @@
        do (loop for equipment in (available-equipment neighbour map)
              do (push (cons neighbour equipment) nbrs))
        finally (return nbrs))))
-
-(defun find-lower-bound (map target)
-  (min-cost map target #'greedy-neighbours))
 
 (defun validate-equipment (equipment region-type)
   (case equipment
@@ -133,11 +130,7 @@
                 while el
                 do ;;(format t "EL ~a ~a~%" el (funcall map (cadr el)))
                   (validate-equipment (caddr el) (funcall map (cadr el)))
-                when (and (or (not (gethash destination-key min-cost-to)) 
-                              (< (car el) (gethash destination-key min-cost-to)))
-                          (or (not (gethash (cons (cadr el) (caddr el)) min-cost-to))
-                              (<= (car el) (gethash (cons (cadr el) (caddr el)) min-cost-to))))
-                do (enqueue-neighbours q map el min-cost-to (greedy-neighbours bounds) path-to))
+                do (enqueue-neighbours q map el min-cost-to (bounded-neighbours bounds) path-to))
        while (or (not best-distance)
                  (< (gethash (cons target 'torch) min-cost-to) best-distance))
        do (setf best-distance (gethash (cons target 'torch) min-cost-to)))
