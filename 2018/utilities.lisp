@@ -1,5 +1,3 @@
-(load "queue.lisp")
-
 (defun hash-union (one other)
   (let ((new-set (make-hash-table :test 'equal)))
     (loop for k being the hash-keys of one

@@ -1,3 +1,4 @@
+(load "queue.lisp")
 (load "utilities.lisp")
 
 (defun up (pos)

@@ -1,3 +1,4 @@
+(load "queue.lisp")
 (load "utilities.lisp")
 
 (defun right (coord)
@@ -13,7 +14,6 @@
   (cons (1+ (car coord)) (cdr coord)))
 
 (defparameter *input-file* "beverage-bandits-input.txt")
-
 (defparameter *test-input-file* "beverage-bandits-test-input.txt")
 
 (defun parse-map (text-map)
