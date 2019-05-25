@@ -4,6 +4,9 @@
 (defun empty (pq)
   (= (cadr pq) 0))
 
+(defun size (pq)
+  (cadr pq))
+
 (defun bubble-up (q index cmp)
   (loop while (and (> index 1)
                    (funcall cmp (aref q index)
