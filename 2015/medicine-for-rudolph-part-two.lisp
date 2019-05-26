@@ -23,32 +23,6 @@
          collect line into lines
          finally (return (read-problem-statement lines))))))
 
-(let ((cache (make-hash-table :test 'equal)))
-  (defun levhenstein-distance (one other)
-    (if (gethash (cons one other) cache)
-        (gethash (cons one other) cache)
-        (let ((distances (make-hash-table :test 'equal)))
-          (labels ((recur (i j)
-                     (if (gethash (cons i j) distances)
-                         (gethash (cons i j) distances)
-                         (let* ((indicator (if (char= (aref one i) (aref other j)) 0 1))
-                                (result (if (= (min i j) 0) 
-                                            (max i j)
-                                            (min (1+ (recur (- i 1) j))
-                                                 (1+ (recur i (- j 1)))
-                                                 (+ (recur (- i 1) (- j 1)) indicator)))))
-                           (setf (gethash (cons i j) distances) result)
-                           result))))
-            (let ((result (recur (1- (length one)) (1- (length other)))))
-              (setf (gethash (cons one other) cache) result)
-              result))))))
-
-(defun compare-candidates (target)
-  (lambda (one other)
-    (let ((one-score (levhenstein-distance (car one) target))
-          (other-score (levhenstein-distance (car other) target)))
-      (< one-score other-score))))
-
 (defun occurrences (s str)
   (labels ((occurs-at (i)
              (loop for c across s
@@ -86,7 +60,7 @@
            (setf (gethash candidate seen) t)))))
 
 (defun find-target (start molecules)
-  (let* ((pq (make-pq (compare-candidates "e")))
+  (let* ((pq (make-pq (lambda (one other) (< (length (car one)) (length (car other))))))
          (current (cons start 0))
          (enqueue-fun (enqueue-candidates pq (candidates molecules))))
     (funcall enqueue-fun current)
