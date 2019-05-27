@@ -58,7 +58,7 @@
 (defun total-cost (equipment)
   (reduce #'+ (mapcar #'cost equipment)))
 
-(defun select-cheapest-equipment (boss)
+(defun select-equipment (boss cost-predicate win-predicate)
   (loop for weapon in *weapons*
      with best-cost = nil
      with equipment = nil
@@ -66,15 +66,21 @@
            do (loop for left-ring in *rings*
                  do (loop for right-ring in *rings*
                        for current-equipment = (list weapon
-                                                      armour
-                                                      left-ring
-                                                      right-ring)
+                                                     armour
+                                                     left-ring
+                                                     right-ring)
                        when (and (or (= (cost left-ring) 0)
                                      (not (equal left-ring right-ring)))
-                                 (will-win (make-player current-equipment) boss)
+                                 (funcall win-predicate (make-player current-equipment) boss)
                                  (or (null best-cost)
-                                     (< (total-cost current-equipment) best-cost)))
+                                     (funcall cost-predicate 
+                                              (total-cost current-equipment) best-cost)))
                        do (setf equipment current-equipment)
                          (setf best-cost (total-cost current-equipment)))))
      finally (return (cons best-cost equipment))))
 
+(defun select-cheapest-winning-equipment (boss)
+  (select-equipment boss #'< #'will-win))
+
+(defun select-most-expensive-losing-equipment (boss)
+  (select-equipment boss #'> (lambda (me boss) (not (will-win me boss)))))
