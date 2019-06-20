@@ -84,10 +84,18 @@
      for i from 1 to n
      collect (car rest)))
 
-(defun part-1 ()
+(defun print-grid (grid)
+  (loop with rows = (car (array-dimensions grid))
+     with cols = (cadr (array-dimensions grid))
+     for output-buffer = (make-array cols)
+     for row from 0 to (1- rows)
+     do (loop for col from 0 to (1- cols)
+           do (setf (aref output-buffer col) (aref grid row col)))
+       (format t "~a~%" (map 'string #'identity output-buffer))))
+
+(defun answer ()
   (let ((grid (make-array '(6 50) :initial-element #\.))
         (commands (parse-commands)))
-    (loop for command in commands do (funcall (eval command) grid)
-         (format t "COMMAND ~a~%" command)
-         (format t "GRID~% ~a~%" grid)
-       finally (return (lit-pixels grid)))))
+    (loop for command in commands do (setf grid (funcall (eval command) grid))
+         finally (print-grid grid)
+         (return (lit-pixels grid)))))
