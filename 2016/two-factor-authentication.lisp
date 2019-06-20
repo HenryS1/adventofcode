@@ -3,17 +3,17 @@
 (defun parse-rect (line)
   (multiple-value-bind (match regs) (cl-ppcre:scan-to-strings "rect\\s+(\\d+)x(\\d+).*" line)
     (declare (ignore match))
-    `(lambda (grid) (rect ,@(map 'list #'parse-integer (reverse regs)) grid))))
+    (eval `(lambda (grid) (rect ,@(map 'list #'parse-integer (reverse regs)) grid)))))
 
 (defun parse-row (line)
   (multiple-value-bind (match regs) (cl-ppcre:scan-to-strings ".*row\\s+y=(\\d+)\\s+by\\s+(\\d+).*" line)
     (declare (ignore match))
-    `(lambda (grid) (rotate-row ,@(map 'list #'parse-integer regs) grid))))
+    (eval `(lambda (grid) (rotate-row ,@(map 'list #'parse-integer regs) grid)))))
 
 (defun parse-col (line)
   (multiple-value-bind (match regs) (cl-ppcre:scan-to-strings ".*column\\s+x=(\\d+)\\s+by\\s+(\\d+)" line)
     (declare (ignore match))
-    `(lambda (grid) (rotate-col ,@(map 'list #'parse-integer regs) grid))))
+    (eval `(lambda (grid) (rotate-col ,@(map 'list #'parse-integer regs) grid)))))
 
 (defun parse-command (line)
   (cond ((search "rect" line)
@@ -68,22 +68,6 @@
            do (incf total))
      finally (return total)))
 
-(defun part-1-test ()
-  (let ((grid (make-array '(3 7) :initial-element 0))
-        (commands (list 
-                   (lambda (grid) (rect 2 3 grid))
-                   (lambda (grid) (rotate-col 1 2 grid))
-                   ;; (lambda (grid) (rotate-row 0 4 grid))
-                   ;; (lambda (grid) (rotate-col 1 1 grid))
-                   )))
-    (loop for command in commands do (setf grid (funcall command grid))
-       finally (format t "~a~%" grid))))
-
-(defun take (n l)
-  (loop for rest = l then (cdr rest)
-     for i from 1 to n
-     collect (car rest)))
-
 (defun print-grid (grid)
   (loop with rows = (car (array-dimensions grid))
      with cols = (cadr (array-dimensions grid))
@@ -96,6 +80,6 @@
 (defun answer ()
   (let ((grid (make-array '(6 50) :initial-element #\.))
         (commands (parse-commands)))
-    (loop for command in commands do (setf grid (funcall (eval command) grid))
+    (loop for command in commands do (setf grid (funcall command grid))
          finally (print-grid grid)
          (return (lit-pixels grid)))))
