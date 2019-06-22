@@ -1,0 +1,42 @@
+(defun decompress (s)
+  (labels ((rec (i acc)
+             (cond ((= i (length s)) acc)
+                   ((char= (aref s i) #\()
+                    (multiple-value-bind (s-next acc-next) (decompress-marker i acc)
+                      (rec s-next acc-next)))
+                   (t (rec (1+ i) (cons (aref s i) acc)))))
+           (decompress-marker (i acc)
+             (multiple-value-bind (len len-end) (parse-integer s :start (1+ i) :junk-allowed t)
+               (multiple-value-bind (repeats repeats-end) (parse-integer s :start (1+ len-end) :junk-allowed t)
+                 (loop with sub-string = (subseq s (1+ repeats-end) (+ 1 repeats-end len))
+                    for repeat from 1 to repeats
+                    do (loop for c across sub-string
+                          do (setf acc (cons c acc))))
+                 (values (+ 1 repeats-end len) acc)))))
+    (reverse (map 'string #'identity (rec 0 (list))))))
+
+(defun find-decompressed-length (s)
+  (labels ((rec (i end len)
+             (cond ((= i end) len)
+                   ((char= (aref s i) #\()
+                    (multiple-value-bind (i-next len-next) (find-subsequence-length i len)
+                      (rec i-next end len-next)))
+                   (t (rec (1+ i) end (1+ len)))))
+           (find-subsequence-length (i len)
+             (multiple-value-bind (sub-len sub-len-end) (parse-integer s :start (1+ i) :junk-allowed t)
+               (multiple-value-bind (repeats repeats-end) (parse-integer s :start (1+ sub-len-end) :junk-allowed t)
+                 (let ((sub-start (+ 1 repeats-end))
+                       (sub-end (+ 1 repeats-end sub-len)))
+                   (values (+ 1 repeats-end sub-len) (+ len (* repeats (rec sub-start sub-end 0)))))))))
+    (rec 0 (length s) 0)))
+
+(defun read-input ()
+  (with-open-file (f "day9.txt")
+    (when f 
+      (read-line f nil nil))))
+
+(defun part-1-solution ()
+  (length (decompress (read-input))))
+
+(defun part-2-solution ()
+  (find-decompressed-length (read-input)))
