@@ -11,7 +11,7 @@
                  (loop with sub-string = (subseq s (1+ repeats-end) (+ 1 repeats-end len))
                     for repeat from 1 to repeats
                     do (loop for c across sub-string
-                          do (setf acc (cons c acc))))
+                          do (push c acc)))
                  (values (+ 1 repeats-end len) acc)))))
     (reverse (map 'string #'identity (rec 0 (list))))))
 
