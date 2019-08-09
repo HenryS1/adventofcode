@@ -99,5 +99,7 @@
                              (floors containment-area)))
          (equipment-choices (choose-equipment-to-move equipment))
          (available-floors (remove (elevator containment-area) '(0 1 2 3))))
-    (mapcar (lambda (floor-number) (cons ())))
-    ))
+    (loop with moves = (list)
+       for floor-number in available-floors
+       do (loop for choice in equipment-choices
+             do ()))))
