@@ -1,3 +1,5 @@
+(load "../2018/priority-queue.lisp")
+
 (ql:quickload :cl-ppcre)
 
 (defun collect-equipment (syms)
@@ -23,11 +25,14 @@
          for new-equipment = (parse-equipment line)
          do (setf (gethash floor-number floors) 
                   (append (gethash floor-number floors) new-equipment))
-         finally (return floors)))))
+         finally (return (make-instance 'containment-area 
+                                        :floors floors
+                                        :elevator 0))))))
 
 (defun copy-hash-table (table)
   (let ((new (make-hash-table :test 'equal)))
-    (maphash (lambda (k v) (setf (gethash k new) (copy-list v))) table)))
+    (maphash (lambda (k v) (setf (gethash k new) (copy-list v))) table)
+    new))
 
 (defun hash-from-alist (l)
   (let ((table (make-hash-table :test 'equal)))
@@ -48,7 +53,7 @@
 
 (defun copy-containment-area (containment-area)
   (make-instance 'containment-area
-                 :equipment (copy-hash-table (equipment containment-area))
+                 :floors (copy-hash-table (floors containment-area))
                  :elevator (elevator containment-area)))
 
 (defun chip-has-companion (chip equipment)
@@ -62,22 +67,23 @@
                              (chip-has-companion e equipment)))
              equipment)))
 
+(defun state-is-valid (containment-area)
+  (every (lambda (floor-number) 
+         (equipment-safe (gethash floor-number (floors containment-area))))
+       '(0 1 2 3)))
+
 (defun finished-p (containment-area)
   (every (lambda (floor) (null (gethash floor (floors containment-area))))
          '(0 1 2)))
 
-(defun move-elevator (floor move containment-area)
+(defun move (move containment-area)
   (let ((current-floor (elevator containment-area)))
-    (case (car move)
-      (both (let ((chip (cadr move))
-                  (generator (caddr move)))
-              (move-chip chip current-floor floor containment-area)
-              (move-generator generator current-floor floor containment-area)))
-      (chips (dolist (chip (cdr move)) 
-               (move-chip chip current-floor floor containment-area)))
-      (generators (dolist (generator (cdr move))
-                    (move-generator generator current-floor floor containment-area))))
-    containment-area))
+    (destructuring-bind (floor-number . equipment) move
+      (loop for e in equipment
+         do (push e (gethash floor-number (floors containment-area)))
+           (setf (gethash current-floor (floors containment-area))
+                 (remove e (gethash current-floor (floors containment-area))))
+           (setf (elevator containment-area) floor-number)))))
 
 (defun choose-equipment-to-move (equipment)
   (loop with choices = (list)
@@ -89,9 +95,9 @@
            do (push (list (car other)) choices)
            when (and (not (eq (caar rest) (caar other))))
            do (when (eq (cadar rest) (cadar other))
-                (push (cons (car rest) (car other)) choices))
+                (push (list (car rest) (car other)) choices))
            when (eq (caar rest) (caar other))
-           do (push (cons (car rest) (car other)) choices))
+           do (push (list (car rest) (car other)) choices))
      finally (return choices)))
 
 (defun generate-moves (containment-area)
@@ -102,4 +108,23 @@
     (loop with moves = (list)
        for floor-number in available-floors
        do (loop for choice in equipment-choices
-             do ()))))
+             do (push (cons floor-number choice) moves))
+       finally (return moves))))
+
+(defun generate-next-states (distance containment-area)
+  (loop for m in (generate-moves containment-area)
+     for cpy = (copy-containment-area containment-area)
+     do (move m cpy)
+     when (state-is-valid cpy)
+     collect (cons distance cpy)))
+
+(defun compare-number-of-moves (one-state other-state)
+  (< (car one-state) (car other-state)))
+
+;; (defun find-moves (containment-area)
+;;   (let ((pq (make-pq #'compare-number-of-moves)))
+;;     (insert-pq (cons 0 containment-area) pq)
+;;     (loop while (not (empty pq))
+;;        for (moves-taken ca) = (pop-pq pq)
+;;        until (finished-p ca)
+;;        do ())))
