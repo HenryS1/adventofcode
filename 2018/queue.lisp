@@ -4,12 +4,15 @@
 (defun enqueue (e q)
   (if (null (car q))
       (let ((l (list e)))
-        (setf (car q) l)
-        (setf (cadr q) l))
+        (setf (car q) l
+              (cadr q) l))
       (let ((new-tl (list e)))
-        (setf (cdr (cadr q)) new-tl)
-        (setf (cadr q) new-tl)))
+        (setf (cdr (cadr q)) new-tl
+              (cadr q) new-tl)))
   q)
 
 (defun poll (q)
   (pop (car q)))
+
+(defun non-empty (q)
+  (car q))
