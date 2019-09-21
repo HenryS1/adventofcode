@@ -1,3 +1,5 @@
+(load "../2018/queue.lisp")
+
 (declaim (optimize (debug 3)))
 
 (defun count-bits (n)
@@ -12,8 +14,9 @@
   (let ((n (+ (* x x) (* 3 x) (* 2 x y) y (* y y) *input*)))
     (evenp (count-bits n))))
 
-(defun neighbours (start-x start-y)
+(defun neighbours (current)
   (loop with nbrs = (list)
+     with (start-x . start-y) = current
      for x from (- start-x 1) to (+ start-x 1)
      do (loop for y from (- start-y 1) to (+ start-y 1)
            when (and 
@@ -26,38 +29,23 @@
 
 (defun find-path (destination stopping-condition)
   (let* ((start (cons 1 1))
-         (q (list start))
-         (next q)
+         (q (make-queue))
          (steps-to (make-hash-table :test 'equal))
          (visited (make-hash-table :test 'equal)))
     (setf (gethash start steps-to) 0)
     (setf (gethash start visited) t)
-    (labels ((enqueue (el)
-               (if q
-                   (setf q (nconc q (list el))
-                         q (cdr q))
-                   (setf q (list el)
-                         next q)))
-             (dequeue ()
-               (if (null next) 
-                   nil
-                   (let ((result (car next)))
-                     (setf next (cdr next))
-                     (when (null next)
-                       (setf q nil))
-                     result)))
-             (bfs ()
-               (when next
-                 (destructuring-bind (x . y) (dequeue)
-                   (loop for neighbour in (neighbours x y)
-                      for current = (cons x y)
+    (enqueue start q)
+    (labels ((bfs ()
+               (when (non-empty q)
+                 (loop with current = (poll q)
+                      for neighbour in (neighbours current)
                       for steps-to-current = (gethash current steps-to)
                       until (funcall stopping-condition current destination steps-to)
                       when (not (gethash neighbour visited))
                       do (setf (gethash neighbour steps-to) 
                                (+ steps-to-current 1))
                         (setf (gethash neighbour visited) t)
-                        (enqueue neighbour)))
+                        (enqueue neighbour q))
                  (bfs))))
       (bfs)
       steps-to)))
