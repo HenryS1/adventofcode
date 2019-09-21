@@ -1,10 +1,12 @@
 (ql:quickload :ironclad)
 
-(defun find-hash (salt number)
+(defun hash (str)
   (ironclad:byte-array-to-hex-string 
    (ironclad:digest-sequence :md5 
-                             (ironclad:ascii-string-to-byte-array 
-                              (concatenate 'string salt (write-to-string number))))))
+                             (ironclad:ascii-string-to-byte-array str))))
+
+(defun find-hash (salt number)
+  (hash (concatenate 'string salt (write-to-string number))))
 
 (defparameter *salt* "jlmsuwbz")
 
@@ -27,14 +29,14 @@
      when (char= a b c d e)
      collect (subseq s i (+ i 5))))
 
-(defun find-nth-key (salt n)
+(defun find-nth-key (salt n hash-fun)
   (let ((seen-pents (make-hash-table :test 'equal))
         (seen-triples (make-hash-table :test 'equal))
         (key-indices (make-hash-table))
         (keys (make-hash-table :test 'equal))
         (indices-left 1000))
     (loop for i = 0 then (+ i 1)
-       for hash = (find-hash salt i)
+       for hash = (funcall hash-fun salt i)
        for triples = (find-triple hash)
        for pents = (find-pents hash)
        while (> indices-left 0)
@@ -54,8 +56,13 @@
                  (nth (- n 1) (sort (loop for index being the hash-keys of key-indices
                                        collect index) #'<))))))
 
-
 (defun answer1 ()
-  (find-nth-key *salt* 64))
+  (find-nth-key *salt* 64 #'find-hash))
 
+(defun key-stretched-hash (salt i)
+  (loop for iter from 1 to 2017
+     for hsh = (find-hash salt i) then (hash hsh)
+     finally (return hsh)))
 
+(defun answer2 ()
+  (find-nth-key *salt* 64 #'key-stretched-hash))
