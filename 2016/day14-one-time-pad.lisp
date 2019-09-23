@@ -33,7 +33,6 @@
   (let ((seen-pents (make-hash-table :test 'equal))
         (seen-triples (make-hash-table :test 'equal))
         (key-indices (make-hash-table))
-        (keys (make-hash-table :test 'equal))
         (indices-left 1000))
     (loop for i = 0 then (+ i 1)
        for hash = (funcall hash-fun salt i)
@@ -49,7 +48,6 @@
          (mapc (lambda (pent) 
                  (mapc (lambda (ind)
                            (when  (< 0 (- i ind) 1000)
-                             (setf (gethash (subseq pent 2) keys) t)
                              (setf (gethash ind key-indices) t)))
                        (gethash (subseq pent 2) seen-triples))) pents)
        finally (return 
