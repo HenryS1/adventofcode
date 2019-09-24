@@ -1,5 +1,5 @@
-(defun make-queue ()
-  (list nil nil))
+(defun make-queue (&rest init)
+  (list init (last init)))
 
 (defun enqueue (e q)
   (if (null (car q))
@@ -10,6 +10,9 @@
         (setf (cdr (cadr q)) new-tl
               (cadr q) new-tl)))
   q)
+
+(defun peek (q)
+  (caar q))
 
 (defun poll (q)
   (pop (car q)))
