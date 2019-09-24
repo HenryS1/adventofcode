@@ -23,5 +23,8 @@
 (defun empty (q)
   (null (car q)))
 
+(defun size (q)
+  (length (car q)))
+
 (defun next-view (q)
   (car q))
