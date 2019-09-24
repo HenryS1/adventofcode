@@ -30,20 +30,40 @@
             (list "U" "D" "L" "R"))
       nbrs)))
 
-(defun bfs (seed)
+(defun bfs (seed stop-condtion answer-callback)
   (let ((q (make-queue '("" . (0 . 0))))
-        (seen (make-hash-table :test 'equal)))
+        (longest 0))
     (labels ((rec ()
-               (when (non-empty q)
-                 (if (equal (cdr (peek q)) '(3 . 3))
-                     (car (peek q))
-                     (progn 
-                       (loop with current = (poll q)
-                          for neighbour in (neighbours seed current)
-                          for (path-to . coord) = neighbour
-                          when (not (gethash neighbour seen))
-                          do (setf (gethash neighbour seen) t)
-                            (enqueue neighbour q))
-                       (rec))))))
+               (if (funcall stop-condtion q)
+                   (funcall answer-callback q longest)
+                   (when (non-empty q)
+                     (loop with current = (poll q)
+                        for neighbour in (neighbours seed current)
+                        for (path . coord) = neighbour
+                        while (not (equal (cdr current) '(3 . 3)))
+                        do (enqueue neighbour q)
+                        when (and (equal coord '(3 . 3))
+                                  (> (length path) longest))
+                        do (setf longest (length path)))
+                     (rec)))))
       (rec))))
 
+(defun shortest-path (q)
+  (equal (cdr (peek q)) '(3 . 3)))
+
+(defun next-in-queue (q paths-to-end)
+  (declare (ignore paths-to-end))
+  (car (poll q)))
+
+(defun answer1 ()
+  (bfs "awrkjxxr" #'shortest-path #'next-in-queue))
+
+(defun finished-searching (q)
+  (empty q))
+
+(defun longest-path (q longest)
+  (declare (ignore q))
+  longest)
+
+(defun answer2 ()
+  (bfs "awrkjxxr" #'finished-searching #'longest-path))

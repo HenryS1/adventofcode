@@ -19,3 +19,9 @@
 
 (defun non-empty (q)
   (car q))
+
+(defun empty (q)
+  (null (car q)))
+
+(defun next-view (q)
+  (car q))
