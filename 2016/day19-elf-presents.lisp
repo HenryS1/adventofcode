@@ -28,3 +28,9 @@
      do (decf n)
        (setf one (cdr one))
      finally (return (cdar one))))
+
+(defun answer1 ()
+  (distribute-presents 3004953))
+
+(defun answer2 ()
+  (distribute-opposite-presents 3004953))
