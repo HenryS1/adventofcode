@@ -13,15 +13,14 @@
                collect (read-blacklist line)))))
 
 (defun compare-intervals (one other)
-  (and (< (car one) (car other))
-       (< (cadr one) (cadr other))))
+  (< (car one) (car other)))
 
 (defun intersect (one other)
   (or (<= (car one) (- (car other) 1) (cadr one))
       (<= (car other) (- (car one) 1) (cadr other))))
 
 (defun combine (one other)
-  (list (car one) (cadr other)))
+  (list (min (car one) (car other)) (max (cadr one) (cadr other))))
 
 (defun merge-intervals (intervals)
   (loop with start = (sort intervals #'compare-intervals)
