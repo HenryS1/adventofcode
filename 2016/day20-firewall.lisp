@@ -1,5 +1,3 @@
-
-
 (defun read-blacklist (line)
   (let (*read-eval*)
     (with-input-from-string (s (substitute #\space #\- line))
@@ -37,3 +35,18 @@
     (if (< 0 (caar merged))
         0
         (+ 1 (cadar merged)))))
+
+(defun answer1 ()
+  (find-first-open-ip (read-input)))
+
+(defun count-open-ips (intervals)
+  (loop with init = (merge-intervals intervals)
+     for current = init then (cdr current)
+     when (cdr current)
+     sum (- (caadr current) (cadar current) 1) and
+     else sum (+ (- 4294967295 (cadar current))
+                 (caar init))
+     while (cdr current)))
+
+(defun answer2 ()
+  (count-open-ips (read-input)))
