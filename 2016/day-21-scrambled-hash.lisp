@@ -20,11 +20,11 @@
 	  ((equal prefix '(reverse positions))
 	   (reverse-positions (nth 2 instruction) (nth 4 instruction) hash))
 	  ((equal (car prefix) 'rotate)
-	   (rotate (cadr prefix) (nth 2 prefix) hash))
+	   (rotate-hash (cadr prefix) (nth 2 prefix) hash))
 	  ((equal prefix '(move position))
 	   (move-position (nth 2 instruction) (nth 5 instruction) hash))
 	  ((equal prefix '(rotate based))
-	   (rotate 'right (find (sym-to-letter (nth 6 instruction)) hash) hash)))))
+	   (rotate-hash 'right (find (sym-to-letter (nth 6 instruction)) hash) hash)))))
 
 (defun swap (i j hash)
   (rotatef (aref hash i) (aref hash j) hash))
@@ -35,5 +35,15 @@
 	while (> j i)
 	do (swap i j hash)))
 
-(defun rotate (direction n hash)
-  ())
+(defun rotate-hash (direction n hash)
+  (case direction
+    (right (let ((pos (- (length hash) n)))
+             (concatenate 'string (subseq hash pos) (subseq hash 0 pos))))
+    (left (concatenate 'string (subseq hash n) (subseq hash 0 n)))))
+
+(defun move-position (i j hash)
+  (if (< i j)
+      (concatenate 'string (subseq hash 0 i) (subseq hash (+ i 1) (+ j 1)) 
+               (string (aref hash i)) (subseq hash (+ j 1)))
+      (concatenate 'string (subseq hash 0 j) (string (aref hash i))
+                   (subseq hash j i) (subseq hash (+ i 1)))))
