@@ -19,7 +19,7 @@
     (vector-push-extend el q (length q))
     (incf size)
     (setf (cadr pq) size)
-    (bubble-up q (1- size) cmp)))
+    (bubble-up q size cmp)))
 
 (defun validate (q index size cmp)
   (if (> index size)
