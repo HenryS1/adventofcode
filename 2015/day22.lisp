@@ -46,18 +46,13 @@
   (multiple-value-bind (n-me n-boss mana-used) (make-move move me boss mana)
     (destructuring-bind (me-hp mn sh rech) n-me
       (destructuring-bind (b-hp d p) n-boss
-;        (when (equal move 'poison) (format t "P IS ~a~%" p))
-        (when (> 6 p 0) (decf b-hp 3))
-        (when (> p 0) (decf p))
+        (when (> 6 p 0) (decf b-hp 3) (decf p))
         (when (<= b-hp 0) (return-from next-state (list (me me-hp mn sh rech)
                                                         (boss b-hp d p)
                                                         mana-used)))
         (when (> sh 0) (decf sh))
         (when (> 5 rech 0) (incf mn 101) (decf rech))
-;        (when (equal move 'poison) (format t "P IS NOW ~a~%" p))
-        (when (> p 0) (progn (decf b-hp 3) (decf p))
-;              (format t "B-HP IS NOW ~a~%" b-hp)
-              )
+        (when (> p 0) (progn (decf b-hp 3) (decf p)))
         (when (<= b-hp 0) (return-from next-state (list (me me-hp mn sh rech)
                                                         (boss b-hp d p)
                                                         mana-used)))
@@ -69,7 +64,8 @@
               (boss b-hp d p)
               mana-used)))))
 
-(defvar *moves* '((recharge . 229) (poison . 173) (shield . 113) (drain . 73) (magic-missile . 53)))
+(defvar *moves* '((recharge . 229) (poison . 173) (shield . 113)
+                  (drain . 73) (magic-missile . 53)))
 
 (defun dropwhile (p l) 
   (loop for rest = l then (cdr rest) while (and rest (funcall p (car rest)))
