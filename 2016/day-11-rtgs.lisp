@@ -33,7 +33,7 @@
         (for e1 = (car e1s))
         (iter (for e2 in (cdr e1s))
               (when (and (or e1 e2)
-)
+                         (elevator-safe e1 e2))
                 (in outer (collect (remove-if #'null (list e1 e2))))))))
 
 (defun safe (eqpmnt)
@@ -45,10 +45,10 @@
 (defun eqpmnt< (one other)
   (or (string< (symbol-name (car one)) (symbol-name (car other)))
       (equal (car one) (car other))
-      (string< (symbol-name (cdr one)) (symbol-name (cdr other)))))
+      (< (cdr one) (cdr other))))
 
 (defun move (state m dir)
-  (destructuring-bind (st e) state
+  (destructuring-bind (st e cnt) state
     (when (and (>= (+ e dir) 0)
                (< (+ e dir) 4))
       (let* ((remaining (sort (copy-seq (set-difference (nth e st) m :test 'equal)) #'eqpmnt<))
@@ -63,26 +63,45 @@
                         (collect remaining))
                       (when (= (+ e dir) fl)
                         (collect added)))
-                (+ e dir)))))))
+                (+ e dir)
+                (+ cnt 1)))))))
 
 (defun next-states (state)
-  (destructuring-bind (st e) state
+  (destructuring-bind (st e cnt) state
+    (declare (ignore cnt))
     (iter (for m in (choose-one-or-two (nth e st)))
           (awhen (move state m 1)
             (collect it))
-          (awhen (move state m -1)
+          (awhen (and (> e 0) (or (= e 3) 
+                                  (or (nth (+ e 1) st)
+                                      (nth (- e 1) st)))
+                      (move state m -1)) 
             (collect it)))))
+
+(defparameter *test-start* 
+  '(((M . L) (M . H)) ((G . H)) ((G . L)) nil))
+
+(defun relabel-state (st)
+  (let ((table (make-hash-table :test 'equal)))
+    (iter (with counter = 0)
+          (for fl in st)
+          (iter (for entry in fl)
+                (when (not (gethash (cdr entry) table))
+                  (setf (gethash (cdr entry) table) counter)
+                  (incf counter))
+                (setf (cdr entry) (gethash (cdr entry) table))))
+    st))
 
 (defun make-moves (start)
   (let ((q (make-queue start))
         (seen (make-hash-table :test 'equal)))
     (iter (for current = (poll q))
           (while current)
-          (for (st e) = current)
-;          (format t "ST ~a E ~a~%" st e)
-          (until (every (lambda (l) (null l)) (butlast st)))
+          (for (st e cnt) = current)
 ;          (format t "CURRENT ~a~%" current)
+          (until (every (lambda (l) (null l)) (butlast st)))
           (iter (for next in (next-states current))
+                (relabel-state (car next))
                 (when (not (gethash next seen))
                   (setf (gethash next seen) t)
                   (enqueue next q)))
