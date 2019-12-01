@@ -1,4 +1,4 @@
-(load "../2018/queue.lisp")
+(load "../2018/priority-queue.lisp")
 (ql:quickload :cl-ppcre)
 (ql:quickload :iterate)
 (ql:quickload :anaphora)
@@ -32,8 +32,7 @@
         (while (cdr e1s))
         (for e1 = (car e1s))
         (iter (for e2 in (cdr e1s))
-              (when (and (or e1 e2)
-                         (elevator-safe e1 e2))
+              (when (and (or e1 e2))
                 (in outer (collect (remove-if #'null (list e1 e2))))))))
 
 (defun safe (eqpmnt)
@@ -44,8 +43,8 @@
 
 (defun eqpmnt< (one other)
   (or (string< (symbol-name (car one)) (symbol-name (car other)))
-      (equal (car one) (car other))
-      (< (cdr one) (cdr other))))
+      (and (equal (car one) (car other))
+           (string< (symbol-name (cdr one)) (symbol-name (cdr other))))))
 
 (defun move (state m dir)
   (destructuring-bind (st e cnt) state
@@ -53,6 +52,8 @@
                (< (+ e dir) 4))
       (let* ((remaining (sort (copy-seq (set-difference (nth e st) m :test 'equal)) #'eqpmnt<))
              (added (sort (copy-seq (append m (nth (+ e dir) st))) #'eqpmnt<)))
+        ;; (format t "remaining ~a~%" remaining)
+        ;; (format t "added ~a~%" added)
         (when (and (safe remaining) 
                    (safe added))
           (list (iter (for fl from 0 to 3)
@@ -78,6 +79,7 @@
 (defparameter *test-start* 
   '(((M . L) (M . H)) ((G . H)) ((G . L)) nil))
 
+
 (defun relabel-state (st)
   (let ((table (make-hash-table :test 'equal)))
     (iter (with counter = 0)
@@ -88,17 +90,34 @@
                            (incf counter))
                          (collect (cons (car entry) (gethash (cdr entry) table))))))))
 
+(defun priority (state)
+  (destructuring-bind ((f1 f2 f3 f4) e cnt) state
+    (declare (ignore e f4 cnt))
+    (+ cnt
+     (* 3 (length f1))
+     (* 2 (length f2))
+     (length f3))))
+
+(defun state< (one other)
+  (< (priority one) (priority other)))
+
 (defun make-moves (start)
-  (let ((q (make-queue start))
+  (let ((q (make-pq #'state<))
         (seen (make-hash-table :test 'equal)))
-    (iter (for current = (poll q))
+    (insert-pq start q)
+    (iter (for current = (pop-pq q))
           (while current)
-          (for (st e cnt) = current)
 ;          (format t "CURRENT ~a~%" current)
+          (for (st e cnt) = current)
           (until (every (lambda (l) (null l)) (butlast st)))
           (iter (for next in (next-states current))
-                (setf (car next) (relabel-state (car next)))
-                (when (not (gethash next seen))
-                  (setf (gethash next seen) t)
-                  (enqueue next q)))
+                ;(format t "NEXT ~a~%" next)
+                ;(setf (car next) (relabel-state (car next)))
+                (when (not (gethash (butlast next) seen))
+                  (setf (gethash (butlast next) seen) t)
+                  (insert-pq next q)))
           (finally (return current)))))
+
+(defun answer-1 ()
+  (make-moves (list (read-state) 0 0)))
+
