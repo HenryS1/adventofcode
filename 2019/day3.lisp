@@ -7,8 +7,6 @@
 (defpackage :day3
   (:use :cl :cl-ppcre :iterate :ironclad :flexi-streams :anaphora))
 
-(declaim (optimize (debug 3) (speed 0)))
-
 (in-package :day3)
 
 (defun find-hash (num)
@@ -81,13 +79,10 @@
       (cadr l)))
 
 (defun steps-to (intersection segments)
-;  (format t "~%INTER ~a~%" intersection)
   (iter (with (x3 . y3) = intersection)
         (for ((x1 . y1) (x2 . y2)) in segments)
         (for s in segments)
-;        (format t "SEGMENT ~a~%" s)
         (for current first '(0 . 0) then (other current s))
-;        (format t "CURRENT ~a~%" current)
         (until (or (and (= x1 x2 x3) (<= y1 y3 y2))
                    (and (= y1 y2 y3) (<= y1 y3 y2))))
         (sum (+ (abs (- x1 x2)) (abs (- y1 y2))) into result)

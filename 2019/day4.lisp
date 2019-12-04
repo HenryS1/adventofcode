@@ -39,8 +39,7 @@
                        k-p k-pp 
                        (= k k-p)
                        (/= k-p k-pp)))
-          (return-from non-dup-same t)))
-  nil)
+          (return-from non-dup-same t))))
 
 (defun answer-1 ()
   (iter (for i from 265275 to 781584)
