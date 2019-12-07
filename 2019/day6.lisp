@@ -1,11 +1,12 @@
 (load "../2018/queue.lisp")
 (ql:quickload :cl-ppcre)
+(ql:quickload :metabang-bind)
 (ql:quickload :iterate)
 (ql:quickload :alexandria)
 (ql:quickload :anaphora)
 
 (defpackage :day6
-  (:use :cl :cl-ppcre :iterate :alexandria :anaphora))
+  (:use :cl :cl-ppcre :iterate :alexandria :anaphora :metabang-bind))
 
 (in-package :day6)
 
@@ -17,8 +18,7 @@
     (mapcar #'read-from-string (split sep line))))
 
 (defun parse-edge (line)
-  (let (*read-eval*)
-    (mapcar #'read-from-string (split "\\)" line))))
+  (read-syms line "\\)"))
 
 (defun make-graph ()
   (iter (with graph = (make-hash-table :test 'equal))
@@ -76,5 +76,5 @@
                         (+ transfers 1)))))))
 
 (defun answer-2 ()
-  (destructuring-bind (bigraph you santa) (make-bigraph)
+  (bind (((bigraph you santa) (make-bigraph)))
     (explore bigraph you santa)))
