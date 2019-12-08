@@ -16,7 +16,6 @@
   (let (*read-eval*)
     (mapcar #'read-from-string (split sep line))))
 
-(defparameter *registers* (make-hash-table :test 'equal))
 (defparameter *ip* 0)
 (defparameter a 0)
 (defparameter b 0)
