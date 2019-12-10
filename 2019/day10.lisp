@@ -1,0 +1,67 @@
+(ql:quickload :cl-ppcre)
+(ql:quickload :iterate)
+(ql:quickload :anaphora)
+(ql:quickload :metabang-bind)
+(ql:quickload :alexandria)
+
+(defpackage :day10
+  (:use :cl :cl-ppcre :iterate :alexandria :anaphora :metabang-bind))
+
+(in-package :day10)
+
+(defun ints (line) 
+  (mapcar #'parse-integer (all-matches-as-strings "-?\\d+" line)))
+
+(defun read-syms (line &optional (sep " "))
+  (let (*read-eval*)
+    (mapcar #'read-from-string (split sep line))))
+
+(defun read-asteroids ()
+  (iter outer
+        (for line in-file "input10" using #'read-line)
+        (for r from 0)
+        (iter (for c from 0 to (- (length line) 1))
+              (for ch in-string line)
+              (when (char= ch #\#)
+                (in outer (collect (cons c r)))))))
+
+(defun find-slope (one other)
+  (let* ((y-diff (- (cdr other) (cdr one)))
+         (x-diff (- (car other) (car one)))
+         (d (gcd x-diff y-diff)))
+    (cons (/ x-diff d) (/ y-diff (abs d)))))
+
+(defun negate (slope)
+  (cons (- (car slope)) (- (cdr slope))))
+
+(defun find-visible-from (asteroids)
+  (iter (with visible = (make-hash-table :test 'equal))
+        (for rest first asteroids then (cdr rest))
+        (while (cdr rest))
+        (for one = (car rest))
+        (iter (for other in (cdr rest))
+              (when (not (equal one other))
+                (let* ((distance (+ (expt (- (car one) (car other)) 2)
+                                    (expt (- (cdr one) (cdr other)) 2)))
+                       (slope (find-slope one other))
+                       (key-one (cons one slope))
+                       (key-other (cons other (negate slope))))
+                  (when (or (not (gethash key-one visible)) 
+                            (< distance (gethash key-one visible)))
+                    (setf (gethash key-one visible) distance))
+                  (when (or (not (gethash key-other visible))
+                            (< distance (gethash key-other visible)))
+                    (setf (gethash key-other visible) distance)))))
+        (finally (return visible))))
+
+(defun find-most-visible (visible)
+  (iter (with visible-neighbours = (make-hash-table :test 'equal))
+        (for ((one . slope) distance) in-hashtable visible)
+        (if (not (gethash one visible-neighbours))
+            (setf (gethash one visible-neighbours) 1)
+            (incf (gethash one visible-neighbours)))
+        (finally (return (iter (for (one ns) in-hashtable visible-neighbours)
+                               (maximize ns))))))
+
+(defun answer-1 ()
+  (find-most-visible (find-visible-from (read-asteroids))))
