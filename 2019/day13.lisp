@@ -56,7 +56,10 @@
   (binop ind codes #'+ base))
 
 (defun save (inp ind codes base)
-  (progn (setf (aref codes (+ base (aref codes (+ ind 1)))) inp)
+  (let* ((encoding (aref codes ind))
+         (mode (digit encoding 2))
+         (offset (if (= mode 2) base 0)))
+    (setf (aref codes (+ offset (aref codes (+ ind 1)))) inp)
          (+ ind 2)))
 
 (defun jit (ind codes base)
@@ -105,7 +108,8 @@
               (1 (setf i (plus i codes base)))
               (2 (setf i (mult i codes base)))
               (3 (if (non-empty input-buffer)
-                     (setf i (save (poll input-buffer) i codes base))
+                     (let ((inp (poll input-buffer)))
+                       (setf i (save inp i codes base)))
                      (finish)))
               (4 (setf i (destructuring-bind (output next-i) 
                                  (output-for-next i codes base)
@@ -146,8 +150,7 @@
         (for tile = (poll output-buffer))
         (count (= tile 2) into cnt)
         (if (>= x 0)
-            (setf (gethash (cons x y) board) tile)
-            (format t "SCORE ~a~%" tile))
+            (setf (gethash (cons x y) board) tile))
         (finally (return (cons cnt board)))))
 
 (defun draw-tiles ()
@@ -171,15 +174,46 @@
         (maximize y into mxy)
         (finally (return (cons mxx mxy)))))
 
-(defun print-table (table)
-  (format t "~a~%" (convert-to-grid table)))
+(defun find-item (output-buffer item)
+  (iter (for items first (car output-buffer) then (nthcdr 3 items))
+        (while items)
+        (for x = (first items))
+        (for y = (second items))
+        (for tl = (third items))
+        (when (= tl item)
+          (return (cons x y)))))
+
+(defun find-next-input (ball paddle)
+  (cond ((> (car ball) (car paddle)) 1)
+          ((< (car ball) (car paddle)) -1)
+          (t 0)))
 
 (defun play-game ()
-  (iter (with input-buffer = (make-queue))
-        (with output-buffer = (make-queue))
-        (with codes = (read-program))
-        (for comp = (make-computer input-buffer output-buffer codes))
-        (setf (aref codes 0) 2)
+  (let* ((input-buffer (make-queue))
+         (output-buffer (make-queue))
+         (codes (let ((cs (read-program))) (setf (aref cs 0) 2) cs))
+         (comp (make-computer input-buffer output-buffer codes))
+         (grid (progn (funcall comp) 
+                      (convert-to-grid (cdr (collect-output (copy-q output-buffer))))))
+         (ball (find-item output-buffer 4))
+         (paddle (find-item output-buffer 3)))
+    (labels ((process-output (&optional (print-score nil))
+               (iter (while (non-empty output-buffer))
+                     (for x = (poll output-buffer))
+                     (for y = (poll output-buffer))
+                     (for tl = (poll output-buffer))
+                     (cond ((= x -1) (when print-score (format t "SCORE ~a~%" tl)))
+                           ((= tl 3) (setf 
+                                      (aref grid (cdr paddle) (car paddle)) 0
+                                      (aref grid y x) tl
+                                      paddle (cons x y)))
+                           ((= tl 4) (setf
+                                      (aref grid (cdr ball) (car ball)) 0
+                                      (aref grid y x) tl
+                                      ball (cons x y)))))))
+      (iter (enqueue (find-next-input ball paddle) input-buffer)
         (while (not (funcall comp)))
-        (enqueue -1 input-buffer)
-        (print-table (cdr (collect-output output-buffer)))))
+        (process-output)
+        (finally (return (process-output t)))))))
+
+(defun answer-2 () (play-game))

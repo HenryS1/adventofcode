@@ -11,6 +11,14 @@
               (cadr q) new-tl)))
   q)
 
+(defun copy-q (q)
+  (let ((cpy (copy-seq (car q))))
+    (list cpy (last cpy))))
+
+(defun clear (q)
+  (setf (car q) (list))
+  (setf (cadr q) (list)))
+
 (defun peek (q)
   (caar q))
 
