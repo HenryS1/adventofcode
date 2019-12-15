@@ -100,7 +100,6 @@
         (base 0))
     (lambda () 
       (iter (for code = (aref codes i))
-;            (format t "CODE ~a I ~a BASE ~a~%" code i base)
             (case (mod code 100)
               (99 (leave t))
               (1 (setf i (plus i codes base)))
@@ -110,7 +109,6 @@
                      (finish)))
               (4 (setf i (destructuring-bind (output next-i) 
                                  (output-for-next i codes base)
-;                           (format t "OUTPUTTING ~a~%" output)
                            (when final-output
                              (setf (aref final-output 0) output))
                            (enqueue output output-buffer)
