@@ -1,4 +1,13 @@
-(load "../2018/priority-queue.lisp")
+(eval-when (:compile-toplevel)
+  (load "../2018/priority-queue.lisp"))
+
+(eval-when (:compile-toplevel)
+  (ql:quickload :metabang-bind))
+
+(defpackage :day22
+  (:use :cl :metabang-bind))
+
+(in-package :day22)
 
 (defun me (hit-points mana shield-turns recharge-turns)
   (list hit-points mana shield-turns recharge-turns))
@@ -43,26 +52,26 @@
     (recharge (recharge me boss mana-used))))
 
 (defun next-state (move me boss mana)
-  (multiple-value-bind (n-me n-boss mana-used) (make-move move me boss mana)
-    (destructuring-bind (me-hp mn sh rech) n-me
-      (destructuring-bind (b-hp d p) n-boss
-        (when (> 6 p 0) (decf b-hp 3) (decf p))
-        (when (<= b-hp 0) (return-from next-state (list (me me-hp mn sh rech)
-                                                        (boss b-hp d p)
-                                                        mana-used)))
-        (when (> sh 0) (decf sh))
-        (when (> 5 rech 0) (incf mn 101) (decf rech))
-        (when (> p 0) (progn (decf b-hp 3) (decf p)))
-        (when (<= b-hp 0) (return-from next-state (list (me me-hp mn sh rech)
-                                                        (boss b-hp d p)
-                                                        mana-used)))
-        (when (> rech 0) (progn (incf mn 101) (decf rech)))
-        (if (> sh 0) 
-            (progn (decf sh) (decf me-hp (max (- d 7) 1)))
-            (decf me-hp d))
-        (list (me me-hp mn sh rech)
-              (boss b-hp d p)
-              mana-used)))))
+  (bind (((:values n-me n-boss mana-used) (make-move move me boss mana))
+         ((me-hp mn sh rech) n-me)
+         ((b-hp d p) n-boss))
+    (when (> 6 p 0) (decf b-hp 3) (decf p))
+    (when (<= b-hp 0) (return-from next-state (list (me me-hp mn sh rech)
+                                                    (boss b-hp d p)
+                                                    mana-used)))
+    (when (> sh 0) (decf sh))
+    (when (> 5 rech 0) (incf mn 101) (decf rech))
+    (when (> p 0) (progn (decf b-hp 3) (decf p)))
+    (when (<= b-hp 0) (return-from next-state (list (me me-hp mn sh rech)
+                                                    (boss b-hp d p)
+                                                    mana-used)))
+    (when (> rech 0) (progn (incf mn 101) (decf rech)))
+    (if (> sh 0) 
+        (progn (decf sh) (decf me-hp (max (- d 7) 1)))
+        (decf me-hp d))
+    (list (me me-hp mn sh rech)
+          (boss b-hp d p)
+          mana-used)))
 
 (defvar *moves* '((recharge . 229) (poison . 173) (shield . 113)
                   (drain . 73) (magic-missile . 53)))
@@ -72,17 +81,15 @@
      finally (return rest)))
 
 (defun not-available (me boss move-mana)
-  (destructuring-bind (move . mana) move-mana
-    (destructuring-bind (me-hp mn sh rech) me
-      (declare (ignore me-hp mn))
-      (destructuring-bind (b-hp d p) boss
-        (declare (ignore b-hp d))
-        (or (< (cadr me) mana)
-            (case move 
-              (recharge (> rech 0))
-              (shield (> sh 0))
-              (poison (> p 0))
-              (t nil)))))))
+  (bind (((move . mana) move-mana)
+         ((_ _ sh rech) me)
+         ((_ _ p) boss))
+    (or (< (cadr me) mana)
+        (case move 
+          (recharge (> rech 0))
+          (shield (> sh 0))
+          (poison (> p 0))
+          (t nil)))))
 
 (defun available-moves (me boss)
   (mapcar #'car (dropwhile (lambda (x) (not-available me boss x)) *moves*)))
@@ -91,23 +98,22 @@
   (let ((available (available-moves me boss)))
     (mapcar (lambda (move) (next-state move me boss mana-used)) available)))
 
-(defun explore (q)
+(defun explore (q &optional (penalty 0))
   (loop for current = (pop-pq q)
      while current
-     do (destructuring-bind (me boss mana-used) current
+     do (bind (((me boss mana-used) current))
           (if (<= (car boss) 0)
               (return-from explore mana-used)
               (let ((next (next-states boss me mana-used)))
                   (dolist (n next)
-                    (destructuring-bind (n-me n-boss n-mn) n
-                      (declare (ignore n-boss n-mn))
+                    (bind (((n-me _ _) n))
                       (when (> (car n-me) 0)
                         (insert-pq n q)))))))))
 
 (defparameter *test-state* (list (me 10 250 0 0) (boss 14 8 0) 0))
 
 (defun blah (state move)
-  (destructuring-bind (me boss mana-used) state
+  (bind (((me boss mana-used) state))
     (next-state move me boss mana-used)))
 
 (defun compare-states (one other)
@@ -129,3 +135,8 @@
   (let ((q (make-pq #'compare-states)))
     (insert-pq (list (me 50 500 0 0) (boss 55 8 0) 0) q)
     (explore q)))
+
+(defun answer-2 ()
+  (let ((q (make-pq #'compare-states)))
+    (insert-pq (list (me 50 500 0 0) (boss 55 8 0) 0) q)
+    ()))
