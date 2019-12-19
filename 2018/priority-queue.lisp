@@ -1,10 +1,10 @@
 (defun make-pq (cmp)
   (list (make-array 5 :adjustable t :fill-pointer 1) 0 cmp))
 
-(defun empty (pq)
+(defun pq-empty (pq)
   (= (cadr pq) 0))
 
-(defun size (pq)
+(defun pq-size (pq)
   (cadr pq))
 
 (defun bubble-up (q index cmp)
