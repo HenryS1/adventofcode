@@ -180,8 +180,9 @@ void reachable_from(coord start,
                     vector<visit>& reachable, 
                     const set<char>& unlocked,
                     const graph& g) {
-    priority_queue<visit> pq;
-    set<coord> seen;
+    static priority_queue<visit> pq;
+    static set<coord> seen;
+    seen.clear();
     seen.insert(start);
     pq.push({start, 0});
     while (!pq.empty()) {
@@ -205,11 +206,60 @@ void reachable_from(coord start,
                     visit v(e.end, e.cost);
                     seen.insert(e.end);
                     pq.push(v);
-                    if (islower(other_c)) reachable.push_back(v);
+                    if (islower(other_c) && unlocked.find(toupper(other_c)) == unlocked.end())
+                        reachable.push_back(v);
                 }
             }
         }
     }
+}
+
+void show_unlocked(const set<char>& unlocked) {
+    for (auto c : unlocked) {
+        cout << c << " ";
+    }
+    cout << endl;
+}
+
+int best_seen = 2147483647;
+
+int max_dist(vector<visit>& reachable) {
+    int best = 0;
+    for (const auto& v: reachable) {
+        best = max(best, v.dist);
+    }
+    return best;
+}
+
+int best_number_of_moves(coord current,
+                         int moves_to,
+                         set<char>& unlocked, 
+                         const graph& g) {
+//    cout << "CURRENT " << current << " " << g.values.find(current)->second << " " << moves_to << endl;
+    if (unlocked.size() == 26) {
+//        cout << "END" << endl;
+        return min(best_seen, moves_to);
+    }
+    vector<visit> reachable;
+    reachable_from(current, reachable, unlocked, g);
+    if (max_dist(reachable) + moves_to >= best_seen) {
+        return best_seen;
+    }
+    for (const auto& v : reachable) {
+        char gate = toupper(g.values.find(v.crd)->second);
+        unlocked.insert(gate);
+ //       cout << "DISTANCE TO " << v.dist << endl;
+        int current_best = best_number_of_moves(v.crd, moves_to + v.dist, unlocked, g);
+        if (current_best < best_seen) {
+            cout << "NEW BEST " << current_best <<endl;
+            best_seen = current_best;
+        }
+        unlocked.erase(gate);
+    }
+    if (unlocked.size() < 10) {
+        cout  << "NEXT TICK " << best_seen << endl;
+    }
+    return best_seen;
 }
 
 int main() {
@@ -224,12 +274,13 @@ int main() {
     // }
 
     graph g = make_graph(mp);
-    vector<visit> reachable;
-    reachable_from({29, 41}, reachable, {}, g);
-    for (auto v : reachable) {
-        cout << v << endl;
-    }
-
+    // vector<visit> reachable;
+    // reachable_from(start, reachable, {}, g);
+    // for (auto v : reachable) {
+    //     cout << v << " " << g.values.find(v.crd)->second << endl;
+    // }
+    set<char> unlocked;
+    int best_moves = best_number_of_moves(start, 0, unlocked, g);
     
-    
+    cout << "BEST MOVES " << best_moves << endl;
 }
