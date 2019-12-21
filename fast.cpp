@@ -294,29 +294,28 @@ int num_keys = 16;
 
 int optimistic_distance_remaining(coord current, 
                                   const graph& g,
-                                  set<coord>& visited,
                                   const set<char>& unlocked) {
-
-    if (visited.size() + unlocked.size() == num_keys) return 0;
     int total_distance = 0;
-    priority_queue<visit> pq;
+    queue<coord> q;
     set<coord> seen;
     seen.insert(current);
-    pq.push({current, 0});
-    while (!pq.empty()) {
-        visit v = pq.top();
-        pq.pop();
-        
-        for (const auto& e : g.optimistic_distances.find(current)->second) {
-            char c = g.values.find(v.crd)->second;
-            if (unlocked.find(c) == unlocked.end() && visited.find(e.end) == visited.end()) {
-                total_distance += v.dist;
-                visited.insert(current);
-                return optimistic_distance_remaining(e.end, g, visited, unlocked);
-            }
+    q.push(current);
+    while (!q.empty()) {
+        coord crd = q.front();
+        q.pop();
+//        cout << "CURRENT " << crd << endl;
+//        const vector<edge>& edges = g.optimistic_distances.find(v.crd)->second;
+//        cout << "NUM EDGES " << edges.size() << endl;
+        for (const auto& e : g.optimistic_distances.find(crd)->second) {
+//            cout << "EDGE " << e << endl;            
             if (seen.find(e.end) == seen.end()) {
                 seen.insert(e.end);
-                pq.push({e.end, v.dist});
+                char c = g.values.find(crd)->second;
+                if (unlocked.find(c) == unlocked.end()) {
+                    total_distance += e.cost;
+//                    cout << "DIST " << e.cost << " END " << e.end << endl;
+                }
+                q.push(e.end);
             }
             
         }
@@ -331,11 +330,10 @@ int best_number_of_moves(coord current,
                          set<char>& unlocked, 
                          const graph& g) {
 //    cout << "CURRENT " << current << " " << g.values.find(current)->second << " " << moves_to << endl;
-    set<coord> visited;
-    int optimistic_distance = optimistic_distance_remaining(current, g, visited, unlocked);
-    if (optimistic_distance + moves_to >= best_seen) {
-        return best_seen;
-    }
+    // int optimistic_distance = optimistic_distance_remaining(current, g, unlocked);
+    // if (optimistic_distance + moves_to >= best_seen) {
+    //     return best_seen;
+    // }
 
     if (unlocked.size() == num_keys) {
         cout << "END" << endl;
@@ -343,6 +341,9 @@ int best_number_of_moves(coord current,
     }
     vector<visit> reachable;
     reachable_from(current, reachable, unlocked, g);
+    if (max_dist(reachable) + moves_to >= best_seen) {
+        return best_seen;
+    }
     sort(reachable.begin(), reachable.end(), compare_visit_dist);
 //    show_path(reachable);
     if (max_dist(reachable) + moves_to >= best_seen) {
@@ -390,9 +391,9 @@ int main() {
     coord start = find_start(mp);
     cout << "START " << start << endl;
 
-    for (auto e : edges_from({1, 17}, mp)) {
-         cout << e << endl;
-    }
+    // for (auto e : edges_from({1, 17}, mp)) {
+    //      cout << e << endl;
+    // }
 
     graph g = make_graph(mp);
     // vector<visit> reachable;
@@ -400,12 +401,13 @@ int main() {
     // for (auto v : reachable) {
     //     cout << v << " " << g.values.find(v.crd)->second << endl;
     // }
-    // set<char> unlocked;
-    // vector<char> path;
-    // int best_moves = best_number_of_moves(start, 0, path, unlocked, g);
-//    cout << optimistic_distance_remaining({4, 8}, g, unlocked) << endl;
-    // for (auto v : g.optimistic_distances.find(start)->second) {
-    //     cout << v << endl;
+    set<char> unlocked;
+    vector<char> path;
+    int best_moves = best_number_of_moves(start, 0, path, unlocked, g);
+    // set<coord> visited;
+    // cout << optimistic_distance_remaining({4, 8}, g, unlocked) << endl;
+    // for (auto v : g.optimistic_distances.find({3, 10})->second) {
+    //      cout << v << endl;
     // }
-    // cout << "BEST MOVES " << best_moves << endl;
+    cout << "BEST MOVES " << best_moves << endl;
 }
