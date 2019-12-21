@@ -154,6 +154,17 @@
 (defun render-ascii (output)
   (map 'string #'code-char output))
 
-(defun answer-1 ()
-  (car (last (send-commands "NOT A T" "NOT B J" "OR T J" "NOT C T" "OR T J" "AND D J"  "WALK"))))
+;; obstacles
+;; #####.###########
+;; #####...#########
+;; #####..#.########
+;; #####.#..########
+;; #####.#.##...####
 
+(defun answer-1 ()
+  (car (last (send-commands "NOT A T" "NOT B J" "OR T J"
+                            "NOT C T" "OR T J" "AND D J"  "WALK"))))
+
+(defun answer-2 ()
+  (car (las (send-commands "NOT A T" "NOT B J" "OR T J" "NOT C T" "OR T J"
+                           "AND D J" "OR J T" "AND E T" "OR H T" "AND T J"  "RUN"))))
