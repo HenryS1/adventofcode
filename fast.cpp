@@ -87,29 +87,34 @@ vector<string> read_map(const string& file) {
 }
 
 bool open_square(char c) {
-    return c == '.' || isalnum(c);
+    return c == '.' || c == '@' || isalnum(c);
 }
 
 void find_neighbours(queue<visit>& q, const visit v, const vector<string>& mp, set<coord>& seen) {
     coord c = v.crd;
+//    cout << "NEIGHBOURS OF " << v.crd << endl;
     if (c.row > 0 && open_square(mp[c.row - 1][c.col]) 
-        && seen.find(coord(c.row - 1, c.col)) == seen.end()) {
-        seen.emplace(c.row - 1, c.col);
+        && seen.find({c.row - 1, c.col}) == seen.end()) {
+//        cout << coord(c.row - 1, c.col) << endl;
+        seen.insert({c.row - 1, c.col});
         q.push({{c.row - 1, c.col}, v.dist + 1});
     }
     if (c.col > 0 && open_square(mp[c.row][c.col - 1]) 
-        && seen.find(coord(c.row, c.col - 1)) == seen.end()) {
-        seen.emplace(c.row, c.col - 1);
+        && seen.find({c.row, c.col - 1}) == seen.end()) {
+//        cout << coord(c.row, c.col - 1) << endl;
+        seen.insert({c.row, c.col - 1});
         q.push({{c.row, c.col - 1}, v.dist + 1});
     }
     if (c.row < mp.size() - 1 && open_square(mp[c.row + 1][c.col])
-        && seen.find(coord(c.row + 1, c.col)) == seen.end()) {
-        seen.emplace(c.row + 1, c.col);
+        && seen.find({c.row + 1, c.col}) == seen.end()) {
+//        cout << coord(c.row + 1, c.col) << endl;
+        seen.insert({c.row + 1, c.col});
         q.push({{c.row + 1, c.col}, v.dist + 1});
     }
-    if (c.col < mp.size() - 1 && open_square(mp[c.row][c.col + 1])
-        && seen.find(coord(c.row, c.col + 1)) == seen.end()) {
-        seen.emplace(c.row, c.col + 1);
+    if (c.col < mp[0].size() - 1 && open_square(mp[c.row][c.col + 1])
+        && seen.find({c.row, c.col + 1}) == seen.end()) {
+//        cout << coord(c.row, c.col + 1) << endl;
+        seen.insert({c.row, c.col + 1});
         q.push({{c.row, c.col + 1}, v.dist + 1});
     }
 }
@@ -122,6 +127,7 @@ vector<edge> edges_from(coord start, const vector<string>& mp) {
     vector<edge> edges;
     while (!q.empty()) {
         visit v = q.front();
+//        cout << v << endl;
         q.pop();
         char c = mp[v.crd.row][v.crd.col];
         if (isalnum(c) && v.crd != start) {
@@ -139,7 +145,7 @@ vector<location> find_locations(coord start, const vector<string>& mp) {
     vector<location> locations;
     locations.push_back({start, mp[start.row][start.col]});
     for (int r = 0; r < mp.size(); r++) {
-        for (int c = 0; c < mp.size(); c++) {
+        for (int c = 0; c < mp[0].size(); c++) {
             char ch = mp[r][c];
             if (isalnum(ch)) {
                 location l({r, c}, ch);
@@ -152,7 +158,7 @@ vector<location> find_locations(coord start, const vector<string>& mp) {
 
 coord find_start(const vector<string>& mp) {
     for (int r = 0; r < mp.size(); r++) {
-        for (int c = 0; c < mp.size(); c++) {
+        for (int c = 0; c < mp[0].size(); c++) {
             if (mp[r][c] == '@') return coord(r, c);
         }
     }
@@ -203,11 +209,11 @@ void reachable_from(coord start,
             if (seen.find(e.end) == seen.end()) {
                 char other_c = g.values.find(e.end)->second;
                 if (islower(other_c) || unlocked.find(other_c) != unlocked.end()) {
-                    visit v(e.end, e.cost);
+                    visit next_v(e.end, e.cost + v.dist);
                     seen.insert(e.end);
-                    pq.push(v);
+                    pq.push(next_v);
                     if (islower(other_c) && unlocked.find(toupper(other_c)) == unlocked.end())
-                        reachable.push_back(v);
+                        reachable.push_back(next_v);
                 }
             }
         }
@@ -216,6 +222,14 @@ void reachable_from(coord start,
 
 void show_unlocked(const set<char>& unlocked) {
     for (auto c : unlocked) {
+        cout << c << " ";
+    }
+    cout << endl;
+}
+
+template<typename T>
+void show_path(const vector<T>& path) {
+    for (auto c : path) {
         cout << c << " ";
     }
     cout << endl;
@@ -233,27 +247,32 @@ int max_dist(vector<visit>& reachable) {
 
 int best_number_of_moves(coord current,
                          int moves_to,
+                         vector<char>& path,
                          set<char>& unlocked, 
                          const graph& g) {
 //    cout << "CURRENT " << current << " " << g.values.find(current)->second << " " << moves_to << endl;
-    if (unlocked.size() == 26) {
-//        cout << "END" << endl;
+    if (unlocked.size() == 6) {
+        cout << "END" << endl;
         return min(best_seen, moves_to);
     }
     vector<visit> reachable;
     reachable_from(current, reachable, unlocked, g);
+//    show_path(reachable);
     if (max_dist(reachable) + moves_to >= best_seen) {
         return best_seen;
     }
+
     for (const auto& v : reachable) {
         char gate = toupper(g.values.find(v.crd)->second);
         unlocked.insert(gate);
- //       cout << "DISTANCE TO " << v.dist << endl;
-        int current_best = best_number_of_moves(v.crd, moves_to + v.dist, unlocked, g);
+        path.push_back(g.values.find(v.crd)->second);
+//        cout << "DISTANCE TO " << v.dist << endl;
+        int current_best = best_number_of_moves(v.crd, moves_to + v.dist, path, unlocked, g);
         if (current_best < best_seen) {
             cout << "NEW BEST " << current_best <<endl;
             best_seen = current_best;
         }
+        path.pop_back();
         unlocked.erase(gate);
     }
     if (unlocked.size() < 10) {
@@ -264,23 +283,24 @@ int best_number_of_moves(coord current,
 
 int main() {
 
-    vector<string> mp = read_map("2019/input18");
+    vector<string> mp = read_map("inputt");//read_map("2019/input18");
 
     coord start = find_start(mp);
-    cout << start << endl;
+    // cout << "START " << start << endl;
 
-    // for (auto e : edges_from({19, 9}, mp)) {
+    // for (auto e : edges_from({1, 17}, mp)) {
     //     cout << e << endl;
     // }
 
     graph g = make_graph(mp);
     // vector<visit> reachable;
-    // reachable_from(start, reachable, {}, g);
+    // reachable_from({1, 17}, reachable, {'A'}, g);
     // for (auto v : reachable) {
     //     cout << v << " " << g.values.find(v.crd)->second << endl;
     // }
     set<char> unlocked;
-    int best_moves = best_number_of_moves(start, 0, unlocked, g);
+    vector<char> path;
+    int best_moves = best_number_of_moves(start, 0, path, unlocked, g);
     
     cout << "BEST MOVES " << best_moves << endl;
 }
