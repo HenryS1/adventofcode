@@ -33,6 +33,10 @@ struct visit {
     visit(coord crd, int dist): crd(crd), dist(dist) {}
 };
 
+struct compare_dist {
+    bool operator() (const visit& one, const visit& other) { return one.dist < other.dist; }
+} compare_visit_dist;
+
 ostream& operator<<(ostream& os, const visit& v) {
     os << "Coord: " << v.crd << " Dist: " << v.dist << endl;
     return os;
@@ -245,41 +249,72 @@ int max_dist(vector<visit>& reachable) {
     return best;
 }
 
+int remaining_distance_estimate(coord current, const vector<coord>& keys) {
+    int min_row = 2147483647, min_col = 2147483647, max_row = 0, max_col = 0;
+    for (auto crd : keys) {
+        min_row = min(crd.row, min_row);
+        min_col = min(crd.col, min_col);
+        max_row = max(crd.row, max_row);
+        max_col = max(crd.row, max_col);
+    }
+    return max(0, current.row - min_row) + max(0, current.col - min_col) 
+        + max(0, max_row - current.row) + max(0, max_col - current.col);
+}
+
+
+
+
 int best_number_of_moves(coord current,
                          int moves_to,
                          vector<char>& path,
                          set<char>& unlocked, 
                          const graph& g) {
 //    cout << "CURRENT " << current << " " << g.values.find(current)->second << " " << moves_to << endl;
-    if (unlocked.size() == 6) {
+    if (unlocked.size() == 16) {
         cout << "END" << endl;
         return min(best_seen, moves_to);
     }
     vector<visit> reachable;
     reachable_from(current, reachable, unlocked, g);
+    sort(reachable.begin(), reachable.end(), compare_visit_dist);
 //    show_path(reachable);
     if (max_dist(reachable) + moves_to >= best_seen) {
         return best_seen;
     }
 
     for (const auto& v : reachable) {
-        char gate = toupper(g.values.find(v.crd)->second);
+        char c = g.values.find(v.crd)->second;
+        char gate = toupper(c);
         unlocked.insert(gate);
-        path.push_back(g.values.find(v.crd)->second);
+        path.push_back(c);
 //        cout << "DISTANCE TO " << v.dist << endl;
         int current_best = best_number_of_moves(v.crd, moves_to + v.dist, path, unlocked, g);
         if (current_best < best_seen) {
             cout << "NEW BEST " << current_best <<endl;
+            show_path(path);
             best_seen = current_best;
         }
         path.pop_back();
         unlocked.erase(gate);
     }
-    if (unlocked.size() < 10) {
+    if (unlocked.size() < 2) {
         cout  << "NEXT TICK " << best_seen << endl;
     }
     return best_seen;
 }
+
+vector<coord> find_keys(const vector<string>& mp) {
+    vector<coord> keys;
+    for (int r = 0; r < mp.size(); r++) {
+        for (int c = 0; c < mp[0].size(); c++) {
+            char ch = mp[r][c];
+            if (islower(ch)) keys.push_back({r, c});
+        }
+    }
+    return keys;
+}
+
+
 
 int main() {
 
