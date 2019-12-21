@@ -59,7 +59,15 @@ ostream& operator<<(ostream& os, const edge& e ) {
 
 bool operator<(const coord& one, const coord& other) {
     return one.row < other .row || (one.row == other.row && one.col < other.col);
-};
+}
+
+bool operator==(const coord& one, const coord& other) {
+    return one.row == other.row && one.col == other.col;
+}
+
+bool operator!=(const coord& one, const coord& other) {
+    return one.row != other.row || one.col != other.col;
+}
 
 struct graph {
     map<coord, char> values;
@@ -109,17 +117,18 @@ void find_neighbours(queue<visit>& q, const visit v, const vector<string>& mp, s
 vector<edge> edges_from(coord start, const vector<string>& mp) {
     queue<visit> q;
     set<coord> seen;
+    seen.insert(start);
     q.push({start, 0});
     vector<edge> edges;
     while (!q.empty()) {
         visit v = q.front();
         q.pop();
         char c = mp[v.crd.row][v.crd.col];
-        if (isalnum(c)) {
+        if (isalnum(c) && v.crd != start) {
             edge e(start, v.crd, v.dist);
             edges.push_back(e);
         }
-        if (c == '.' || c == '@') {
+        if (v.crd == start || (c == '.' || c == '@')) {
             find_neighbours(q, v, mp, seen);
         }
     }
@@ -128,7 +137,7 @@ vector<edge> edges_from(coord start, const vector<string>& mp) {
 
 vector<location> find_locations(coord start, const vector<string>& mp) {
     vector<location> locations;
-    locations.push_back(location(start, mp[start.row][start.col]));
+    locations.push_back({start, mp[start.row][start.col]});
     for (int r = 0; r < mp.size(); r++) {
         for (int c = 0; c < mp.size(); c++) {
             char ch = mp[r][c];
@@ -155,8 +164,10 @@ graph make_graph(const vector<string>& mp) {
     vector<location> locations = find_locations(start, mp);
     map<coord, vector<edge>> graph_edges;
     for (auto loc : locations) {
+//        cout << "LOCATION " << loc << endl;
         vector<edge> edges = edges_from(loc.crd, mp);
-        graph_edges.insert({start, move(edges)});
+//        cout << "NUM EDGES " << edges.size() << endl;
+        graph_edges.insert({loc.crd, move(edges)});
     }
     map<coord, char> values;
     for (auto loc : locations) {
@@ -169,26 +180,37 @@ void reachable_from(coord start,
                     vector<visit>& reachable, 
                     const set<char>& unlocked,
                     const graph& g) {
-    static priority_queue<visit> pq;
-    static set<coord> seen;
+    priority_queue<visit> pq;
+    set<coord> seen;
+    seen.insert(start);
     pq.push({start, 0});
     while (!pq.empty()) {
         visit v = pq.top();
-        char c = g.values.find(v.crd)->second;
+//        cout << "VISITING " << v << endl;
+//        char c = g.values.find(v.crd)->second;
+//        cout << "ONE" << endl;
         pq.pop();
-        if (islower(c)) {
-            reachable.push_back(v);
-        }
+        // if (islower(c) && seen.find(v.crd) == seen.end()) {
+        //     reachable.push_back(v);
+        // }
+        // if (g.edges.find(v.crd) == g.edges.end()) {
+        //     cout << "NO EDGES" << endl;
+        // }
+//        cout << "TWO" << endl;
         for (auto e : g.edges.find(v.crd)->second) {
-            if (seen.find(e.end) != seen.end()) {
-                seen.insert(e.end);
-                pq.push({e.end, v.dist});
+//            cout << "EDGE " << e << endl;
+            if (seen.find(e.end) == seen.end()) {
+                char other_c = g.values.find(e.end)->second;
+                if (islower(other_c) || unlocked.find(other_c) != unlocked.end()) {
+                    visit v(e.end, e.cost);
+                    seen.insert(e.end);
+                    pq.push(v);
+                    if (islower(other_c)) reachable.push_back(v);
+                }
             }
         }
     }
 }
-
-
 
 int main() {
 
@@ -197,7 +219,17 @@ int main() {
     coord start = find_start(mp);
     cout << start << endl;
 
-    for (auto e : edges_from(start, mp)) {
-        cout << e << endl;
+    // for (auto e : edges_from({19, 9}, mp)) {
+    //     cout << e << endl;
+    // }
+
+    graph g = make_graph(mp);
+    vector<visit> reachable;
+    reachable_from({29, 41}, reachable, {}, g);
+    for (auto v : reachable) {
+        cout << v << endl;
     }
+
+    
+    
 }
