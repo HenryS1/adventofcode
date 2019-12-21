@@ -76,8 +76,11 @@ bool operator!=(const coord& one, const coord& other) {
 struct graph {
     map<coord, char> values;
     map<coord, vector<edge>> edges;
-    graph(map<coord, char> values, map<coord, vector<edge>> edges)
-        : values(move(values)), edges(move(edges)) {}
+    map<coord, vector<edge>> optimistic_distances;
+
+    graph(map<coord, char> values, map<coord, vector<edge>> edges,
+          map<coord, vector<edge>> optimistic_distances)
+        : values(move(values)), edges(move(edges)), optimistic_distances(optimistic_distances) {}
 };
 
 vector<string> read_map(const string& file) {
@@ -121,6 +124,27 @@ void find_neighbours(queue<visit>& q, const visit v, const vector<string>& mp, s
         seen.insert({c.row, c.col + 1});
         q.push({{c.row, c.col + 1}, v.dist + 1});
     }
+}
+
+vector<edge> optimistic_distances_from(coord start, const vector<string>& mp) {
+    queue<visit> q;
+    set<coord> seen;
+    seen.insert(start);
+    q.push({start, 0});
+    vector<edge> edges;
+    while (!q.empty()) {
+        visit v = q.front();
+        q.pop();
+        char c = mp[v.crd.row][v.crd.col];
+        if (islower(c) && v.crd != start) {
+            edge e(start, v.crd, v.dist);
+            edges.push_back(e);
+        }
+        if (v.crd == start || isupper(c) || (c == '.' || c == '@') ) {
+            find_neighbours(q, v, mp, seen);
+        }
+    }
+    return edges;
 }
 
 vector<edge> edges_from(coord start, const vector<string>& mp) {
@@ -173,17 +197,20 @@ graph make_graph(const vector<string>& mp) {
     coord start = find_start(mp);
     vector<location> locations = find_locations(start, mp);
     map<coord, vector<edge>> graph_edges;
+    map<coord, vector<edge>> graph_optimistic_distances;
     for (auto loc : locations) {
 //        cout << "LOCATION " << loc << endl;
         vector<edge> edges = edges_from(loc.crd, mp);
 //        cout << "NUM EDGES " << edges.size() << endl;
+        vector<edge> optimistic_distances = optimistic_distances_from(loc.crd, mp);
         graph_edges.insert({loc.crd, move(edges)});
+        graph_optimistic_distances.insert({loc.crd, move(optimistic_distances)});
     }
     map<coord, char> values;
     for (auto loc : locations) {
         values.insert({ loc.crd, mp[loc.crd.row][loc.crd.col] });
     }
-    return graph(values, graph_edges);
+    return graph(values, graph_edges, graph_optimistic_distances);
 }
 
 void reachable_from(coord start, 
@@ -224,6 +251,8 @@ void reachable_from(coord start,
     }
 }
 
+
+
 void show_unlocked(const set<char>& unlocked) {
     for (auto c : unlocked) {
         cout << c << " ";
@@ -261,8 +290,40 @@ int remaining_distance_estimate(coord current, const vector<coord>& keys) {
         + max(0, max_row - current.row) + max(0, max_col - current.col);
 }
 
+int num_keys = 16;
 
+int optimistic_distance_remaining(coord current, 
+                                  const graph& g,
+                                  set<coord>& visited,
+                                  const set<char>& unlocked) {
 
+    if (visited.size() + unlocked.size() == num_keys) return 0;
+    int total_distance = 0;
+    priority_queue<visit> pq;
+    set<coord> seen;
+    seen.insert(current);
+    pq.push({current, 0});
+    while (!pq.empty()) {
+        visit v = pq.top();
+        pq.pop();
+        
+        for (const auto& e : g.optimistic_distances.find(current)->second) {
+            char c = g.values.find(v.crd)->second;
+            if (unlocked.find(c) == unlocked.end() && visited.find(e.end) == visited.end()) {
+                total_distance += v.dist;
+                visited.insert(current);
+                return optimistic_distance_remaining(e.end, g, visited, unlocked);
+            }
+            if (seen.find(e.end) == seen.end()) {
+                seen.insert(e.end);
+                pq.push({e.end, v.dist});
+            }
+            
+        }
+    }
+    
+    return total_distance;
+}
 
 int best_number_of_moves(coord current,
                          int moves_to,
@@ -270,7 +331,13 @@ int best_number_of_moves(coord current,
                          set<char>& unlocked, 
                          const graph& g) {
 //    cout << "CURRENT " << current << " " << g.values.find(current)->second << " " << moves_to << endl;
-    if (unlocked.size() == 16) {
+    set<coord> visited;
+    int optimistic_distance = optimistic_distance_remaining(current, g, visited, unlocked);
+    if (optimistic_distance + moves_to >= best_seen) {
+        return best_seen;
+    }
+
+    if (unlocked.size() == num_keys) {
         cout << "END" << endl;
         return min(best_seen, moves_to);
     }
@@ -321,11 +388,11 @@ int main() {
     vector<string> mp = read_map("inputt");//read_map("2019/input18");
 
     coord start = find_start(mp);
-    // cout << "START " << start << endl;
+    cout << "START " << start << endl;
 
-    // for (auto e : edges_from({1, 17}, mp)) {
-    //     cout << e << endl;
-    // }
+    for (auto e : edges_from({1, 17}, mp)) {
+         cout << e << endl;
+    }
 
     graph g = make_graph(mp);
     // vector<visit> reachable;
@@ -333,9 +400,12 @@ int main() {
     // for (auto v : reachable) {
     //     cout << v << " " << g.values.find(v.crd)->second << endl;
     // }
-    set<char> unlocked;
-    vector<char> path;
-    int best_moves = best_number_of_moves(start, 0, path, unlocked, g);
-    
-    cout << "BEST MOVES " << best_moves << endl;
+    // set<char> unlocked;
+    // vector<char> path;
+    // int best_moves = best_number_of_moves(start, 0, path, unlocked, g);
+//    cout << optimistic_distance_remaining({4, 8}, g, unlocked) << endl;
+    // for (auto v : g.optimistic_distances.find(start)->second) {
+    //     cout << v << endl;
+    // }
+    // cout << "BEST MOVES " << best_moves << endl;
 }
