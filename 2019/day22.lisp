@@ -37,7 +37,7 @@
         (finally (return new-deck))))
 
 (defun read-lines ()
-  (iter (for line in-file "inputt" using #'read-line)
+  (iter (for line in-file "input22" using #'read-line)
         (collect line)))
 
 (defparameter *size* 7)
@@ -54,7 +54,7 @@
                (setf cards (new-stack cards))))
         (finally (return cards))))
 
-(defun answer-1 () (interpret-operations))
+(defun answer-1 () (position 2019 (interpret-operations)))
 
 (defclass deck ()
   ((stride :accessor stride :initform 1)
@@ -100,3 +100,31 @@
 ;        (format t "STRIDE ~a DIRECTION ~a START ~a~%" (stride deck) (direction deck) (start deck))
         (finally (return (collect-elements deck)))))
 
+(defun prepare-action (line)
+  (let ((is (ints line)))
+    (cond ((search "increment" line)
+           `(setf i (mod (* i ,(car is)) size)))
+          ((search "cut" line)
+           `(setf i (mod (+ i ,(* (car is) -1)) size)))
+          ((search "stack" line)
+           `(setf i (- size i 1))))))
+
+(defun read-function ()
+  (let ((body (mapcar #'prepare-action (read-lines))))
+    (eval `(defun adjust-index (i size)
+             (progn
+               ,@body
+               i)))))
+
+(read-function)
+
+(defun find-cycle ()
+  (iter (with seen-diff = (make-hash-table :test 'equal))
+        (for ind first 2020 then (adjust-index ind 119315717514047))
+        (for ind-p previous ind)
+        (for i from 1 to 100)
+        (format t "IND ~a~%" ind)
+        ;; (when ind-p
+        ;;   (format t "RATIO ~a DIFF ~a~%" (/ ind ind-p) (- ind ind-p)))
+        (when (and ind-p (gethash (- ind ind-p) seen-diff))
+          (error "YAY!"))))
