@@ -1,0 +1,102 @@
+(ql:quickload :cl-ppcre)
+(ql:quickload :iterate)
+(ql:quickload :anaphora)
+(ql:quickload :metabang-bind)
+(ql:quickload :alexandria)
+
+(defpackage :day22
+  (:use :cl :cl-ppcre :iterate :alexandria :anaphora :metabang-bind))
+
+(in-package :day22)
+
+(defun ints (line) 
+  (mapcar #'parse-integer (all-matches-as-strings "-?\\d+" line)))
+
+(defun read-syms (line &optional (sep " "))
+  (let (*read-eval*)
+    (mapcar #'read-from-string (split sep line))))
+
+(defun new-stack (cards) 
+  (reverse cards))
+
+(defun cut (cards n)
+  (if (> n 0)
+      (concatenate 'vector (subseq cards n) (subseq cards 0 n))
+      (cut cards (+ (length cards) n))))
+
+(defun deal-with-increment (cards n)
+  (iter (with new-deck = (make-array (length cards) :initial-element -1))
+        (with remaining = (length cards))
+        (with next-pointer = 0)
+        (while (> remaining 0))
+        (for i first 0 then (mod (+ i n) (length cards)))
+        (when (= (aref new-deck i) -1)
+          (setf (aref new-deck i) (aref cards next-pointer))
+          (incf next-pointer)
+          (decf remaining))
+        (finally (return new-deck))))
+
+(defun read-lines ()
+  (iter (for line in-file "inputt" using #'read-line)
+        (collect line)))
+
+(defparameter *size* 10)
+
+(defun interpret-operations ()
+  (iter (with cards = (coerce (iter (for i from 0 to (- *size* 1)) (collect i)) 'vector))
+        (for line in (read-lines))
+        (for is = (ints line))
+        (cond ((search "increment" line)
+               (setf cards (deal-with-increment cards (car is))))
+              ((search "cut" line)
+               (setf cards (cut cards (car is))))
+              ((search "stack" line)
+               (setf cards (new-stack cards))))
+        (finally (return cards))))
+
+(defun answer-1 () (interpret-operations))
+
+(defclass deck ()
+  ((stride :accessor stride :initform 1)
+   (direction :accessor direction :initform 1)
+   (start :accessor start :initform 0)
+   (size :accessor size :initarg :size)))
+
+(defun deal-new-stack (deck)
+  (setf (direction deck) (* (direction deck) -1)))
+
+(defun cut-deck (deck n)
+  (if (> n 0)
+      (progn (setf n (* n (direction deck)))
+             (setf (start deck) (mod (+ (start deck) n) (size deck))))
+      (cut-deck deck (+ (size deck) n))))
+
+(defun deal-deck-with-increment (deck n)
+  (setf (stride deck) (mod (* (stride deck) (- (size deck) n)) (size deck))))
+
+(defun collect-elements (deck)
+  (iter (with start = (if (> (direction deck) 0) (start deck) 
+                          (mod (+ (start deck)
+                                  (* (stride deck) (- (size deck) 1))) (size deck))))
+        (with seen = 0)
+;        (format t "START ~A~%" start)
+        (for ind first start then (mod (+ ind (* (stride deck) (direction deck))) (size deck)))
+        (while (< seen (size deck)))
+;        (format t "IND ~a~%" ind)
+        (collect (mod ind (size deck)))
+        (incf seen)))
+
+(defun interpret-with-deck ()
+  (iter (with deck = (make-instance 'deck :size *size*))
+        (for line in (read-lines))
+        (for is = (ints line))
+        (cond ((search "increment" line)
+               (deal-deck-with-increment deck (car is)))
+              ((search "cut" line)
+               (cut-deck deck (car is)))
+              ((search "stack" line)
+               (deal-new-stack deck)))
+;        (format t "~a~%" line)
+;        (format t "STRIDE ~a DIRECTION ~a START ~a~%" (stride deck) (direction deck) (start deck))
+        (finally (return (collect-elements deck)))))
+
