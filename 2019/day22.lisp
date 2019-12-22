@@ -40,7 +40,7 @@
   (iter (for line in-file "inputt" using #'read-line)
         (collect line)))
 
-(defparameter *size* 10)
+(defparameter *size* 7)
 
 (defun interpret-operations ()
   (iter (with cards = (coerce (iter (for i from 0 to (- *size* 1)) (collect i)) 'vector))
