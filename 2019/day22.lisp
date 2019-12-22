@@ -103,9 +103,9 @@
 (defun prepare-action (line)
   (let ((is (ints line)))
     (cond ((search "increment" line)
-           `(setf i (mod (* i ,(car is)) size)))
+           `(setf i (* i ,(car is))))
           ((search "cut" line)
-           `(setf i (mod (+ i ,(* (car is) -1)) size)))
+           `(setf i (+ i ,(* (car is) -1))))
           ((search "stack" line)
            `(setf i (- size i 1))))))
 
@@ -128,3 +128,28 @@
         ;;   (format t "RATIO ~a DIFF ~a~%" (/ ind ind-p) (- ind ind-p)))
         (when (and ind-p (gethash (- ind ind-p) seen-diff))
           (error "YAY!"))))
+
+(defun extended-euclid (a b)
+  (iter (for (old-r r) first (list a b) then (list r (- old-r (* quotient r))))
+        (while (/= r 0))
+        (for quotient = (floor old-r r))
+        (for (old-s s) first (list 1 0) then (list s (- old-s (* quotient s))))
+        (for (old-te te) first (list 0 1) then (list te (- old-te (* quotient te))))
+        (finally (return old-te))))
+
+;; (adjust-index #C(0 1) 119315717514047)
+;; #C(6755816444126017704996403974577411786740314542833769357326975224574943580739621 -667487277673079497859196426642502502538645344354304000000000000000000)
+
+;; (mod (* (- 60269698145644) 96123531687058) 119315717514047)
+;; 106352671593160
+
+;; a 96123531687058
+;; b 106352671593160
+
+(defun square-application (c)
+  (+ (* (imagpart c) c) (realpart c)))
+
+(defun repeat-square (c n)
+  (iter (for i from 1 to n)
+        (for result first c then (square-application result))
+        (finally (return result))))
