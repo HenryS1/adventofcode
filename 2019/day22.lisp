@@ -142,14 +142,34 @@
 
 ;; (mod (* (- 60269698145644) 96123531687058) 119315717514047)
 ;; 106352671593160
+;; num-applications 101741582076661
 
 ;; a 96123531687058
 ;; b 106352671593160
+;; #C(106352671593160 96123531687058)
 
-(defun square-application (c)
-  (+ (* (imagpart c) c) (realpart c)))
+(defun compose-transformations (c1 c2 md)
+  (let ((new-c (+ (* (imagpart c1) c2) (realpart c1))))
+    (complex (mod (realpart new-c) md) (mod (imagpart new-c) md))))
 
-(defun repeat-square (c n)
-  (iter (for i from 1 to n)
-        (for result first c then (square-application result))
+(defun square-application (c md)
+  (let ((new-c (+ (* (imagpart c) c) (realpart c))))
+    (complex (mod (realpart new-c) md) (mod (imagpart new-c) md))))
+
+(defun repeat-square (c n md)
+  (iter (for i from 0 to n)
+        (for result first c then (square-application result md))
         (finally (return result))))
+
+(defun apply-transformation (x c md)
+  (mod (+ (* x (imagpart c)) (realpart c)) md))
+
+(defun find-inverse-transformation (c md num-applications)
+  (iter (with trans = #C(0 1))
+        (while (> num-applications 0))
+        (for j from 0)
+        (when (= (mod num-applications 2) 1)
+          (format t "J ~a~%" j)
+          (setf trans (compose-transformations (repeat-square c j md) trans md)))
+        (setf num-applications (floor num-applications 2))
+        (finally (return trans))))
