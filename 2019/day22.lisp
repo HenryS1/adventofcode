@@ -118,17 +118,6 @@
 
 (read-function)
 
-(defun find-cycle ()
-  (iter (with seen-diff = (make-hash-table :test 'equal))
-        (for ind first 2020 then (adjust-index ind 119315717514047))
-        (for ind-p previous ind)
-        (for i from 1 to 100)
-        (format t "IND ~a~%" ind)
-        ;; (when ind-p
-        ;;   (format t "RATIO ~a DIFF ~a~%" (/ ind ind-p) (- ind ind-p)))
-        (when (and ind-p (gethash (- ind ind-p) seen-diff))
-          (error "YAY!"))))
-
 (defun extended-euclid (a b)
   (iter (for (old-r r) first (list a b) then (list r (- old-r (* quotient r))))
         (while (/= r 0))
@@ -140,9 +129,13 @@
 ;; (adjust-index #C(0 1) 119315717514047)
 ;; #C(6755816444126017704996403974577411786740314542833769357326975224574943580739621 -667487277673079497859196426642502502538645344354304000000000000000000)
 
+;;(* (complex -96123531687058 1) 60269698145644)
+
 ;; (mod (* (- 60269698145644) 96123531687058) 119315717514047)
 ;; 106352671593160
 ;; num-applications 101741582076661
+
+;; basic inverse #C(-2021528722011029397218193904 81555981890264)
 
 ;; a 96123531687058
 ;; b 106352671593160
