@@ -6,8 +6,6 @@
 (ql:quickload :metabang-bind)
 (ql:quickload :alexandria)
 
-(declaim (optimize (debug 3) (speed 0)))
-
 (defpackage :day18
   (:use :cl :cl-ppcre :iterate :alexandria :anaphora :metabang-bind))
 
@@ -270,6 +268,3 @@
 ;               (format t "UNLOCKED ~a~%" unlocked)
                ))
       (rec (find-start-coord mp) 0 nil))))
-
-(defun factorial (n)
-  (if (< n 2) 1 (* n (factorial (- n 1)))))
