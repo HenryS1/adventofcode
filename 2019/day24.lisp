@@ -49,12 +49,9 @@
   (let ((seen (alist-hash-table (list (cons (map 'list #'identity (read-lines)) t)) :test 'equal)))
     (iter (for grid first (read-lines) then new-grid)
           (for new-grid first (map 'vector #'copy-seq grid) then (map 'vector #'copy-seq new-grid))
-;          (format t "~{~a~%~}~%" (map 'list #'identity grid))
-          (for i from 1 to 4)
           (iter (for row in-vector grid)
                 (for r index-of-vector grid)
                 (iter (for c index-of-vector row)
-;                      (format t "~a ~a~%" (cons r c) (neighbours r c grid))
                       (if (or (and (char= (grid-at r c grid) #\#)
                                    (= (neighbours r c grid) 1))
                               (and (char= (grid-at r c grid) #\.)
@@ -62,7 +59,6 @@
                           (setf (grid-at r c new-grid) #\#)
                           (setf (grid-at r c new-grid) #\.))))
           (for hash-entry = (map 'list #'identity new-grid))
-          (format t "~{~a~%~}~%" hash-entry)
           (until (gethash hash-entry seen))
           (setf (gethash hash-entry seen) t)
           (finally (return (list (biodiversity-rating new-grid) hash-entry))))))
@@ -80,12 +76,6 @@
       (incf neighbours))
     (when (and (< c (- (length (aref grid 0)) 1)) (char= (grid-at r (+ c 1) grid) #\#))
       (incf neighbours))
-    ;; (when up-one (format t "UP ONE~%~{~a~%~}~%MIDDLE~%~{~a~%~}~% R ~a C ~a HAS NEIGHBOUR ~a~%" (coerce up-one 'list) (coerce grid 'list)
-    ;;                      r c 
-    ;;                      (or (and (= r 0) (char= (grid-at 1 2 up-one) #\#))
-    ;;                       (and (= r 4) (char= (grid-at 3 2 up-one) #\#))
-    ;;                       (and (= c 0) (char= (grid-at 2 1 up-one) #\#))
-    ;;                       (and (= c 4) (char= (grid-at 2 3 up-one) #\#)))))
     (when up-one 
       (when (and (= r 0) (char= (grid-at 1 2 up-one) #\#))
         (incf neighbours))
@@ -111,17 +101,12 @@
       (iter (for dr from 0 to 4)
             (when (char= (grid-at dr 4 down-one) #\#)
               (incf neighbours))))
-;    (format t "R ~a C ~a NEIGHBOURS ~a~%" r c neighbours)
     neighbours))
 
 (defun new-grid (up-one middle down-one)
-  ;; (format t "UP ONE~%~{~a~%~}~%MIDDLE~%~{~A~%~}~%DOWN ONE~%~{~A~%~}~%" 
-  ;;         (coerce up-one 'list) (coerce middle 'list) (coerce down-one 'list))
   (iter (with new-grid = (map 'vector #'copy-seq middle))
         (for row in-vector middle)
-;        (format t "ROW ~a~%" row)
         (for rw from 0)
-;        (format t "R ~a~%" rw)
         (for r index-of-vector middle)
         (iter (for c index-of-vector row)
               (when (or (/= r 2) (/= c 2))
@@ -140,19 +125,6 @@
 
 (defun non-empty (grid)
   (some (lambda (row) (find #\# row)) grid))
-
-(defun recursive-bugs (n)
-  (iter (for levels first (list (read-lines)) then (recursive-tick levels))
-        (for _ from 1 to n)
-        (finally (return levels))))
-
-(defun count-bugs (levels)
-  (iter (for level in levels)
-        (sum (reduce #'+ (map 'vector 
-                              (lambda (row) (count-if (lambda (c) (char= c #\#)) row)) level)))))
-
-(defun answer-2 ()
-  (count-bugs (recursive-bugs 200)))
 
 (defun recursive-tick (levels)
   (iter (with empty-grid = (make-new-grid (car levels)))
@@ -176,7 +148,15 @@
     (iter (for l in result)
           (format t "~{~a~%~}~%" l))))
 
-(defun format-recursive-bugs (n)
-  (let ((result (mapcar (lambda (l) (coerce l 'list)) (recursive-bugs n))))
-    (iter (for l in result)
-          (format t "~{~a~%~}~%" l))))
+(defun recursive-bugs (n)
+  (iter (for levels first (list (read-lines)) then (recursive-tick levels))
+        (for _ from 1 to n)
+        (finally (return levels))))
+
+(defun count-bugs (levels)
+  (iter (for level in levels)
+        (sum (reduce #'+ (map 'vector 
+                              (lambda (row) (count-if (lambda (c) (char= c #\#)) row)) level)))))
+
+(defun answer-2 ()
+  (count-bugs (recursive-bugs 200)))
