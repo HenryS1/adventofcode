@@ -318,9 +318,6 @@
                          (rec (- k 1)))))))
     (rec (length l))))
 
-(defun manhattan-distance (k1 k2)
-  (+ (abs (- (car k1) (car k2))) (abs (- (cdr k1) (cdr k2)))))
-
 (defun max-pair-by-distance (keys distances)
   (iter (with dist = 0)
         (with best-pair = nil)
