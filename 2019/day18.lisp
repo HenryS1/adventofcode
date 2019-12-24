@@ -270,7 +270,7 @@
                ))
       (rec (find-start-coord mp) 0 nil))))
 
-(defun find-keys (mp)
+(defun find-key-coords (mp)
   (iter outer
         (for row in-vector mp)
         (for r from 0)
@@ -280,7 +280,7 @@
                 (in outer (collect (cons r c)))))))
 
 (defun optimistic-distances-between (mp)
-  (let ((keys (find-keys mp))
+  (let ((keys (find-key-coords mp))
         (distances (make-hash-table :test 'equal)))
     (labels ((find-distances (start)
                (iter (with q = (make-queue (cons start 0)))
@@ -330,7 +330,7 @@
               (for k2 = (aref keys j))
               (let ((new-dist (cdr (find-if (lambda (e) (equal (car e) k2))
                                             (gethash k1 distances)))))
-                (and (not (equal k1 k2)) (> (cdr new-dist) dist))
+                (and (not (equal k1 k2)) (> new-dist dist))
                 (setf dist new-dist
                       best-pair (cons k1 k2))))
         (finally (return best-pair))))
