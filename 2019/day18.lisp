@@ -324,7 +324,7 @@
         (with best-pair = nil)
         (for i from 0 to (- (length keys) 2))
         (for k1 = (aref keys i))
-        (iter (for j from i to (- (length keys) 1))
+        (iter (for j from (+ i 1) to (- (length keys) 1))
               (for k2 = (aref keys j))
               (let ((new-dist (funcall distances k1 k2)))
                 (and (not (equal k1 k2)) (> new-dist dist))
