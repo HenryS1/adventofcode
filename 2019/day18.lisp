@@ -20,7 +20,7 @@
 
 (defun read-map ()
   (map 'vector #'identity 
-       (iter (for line in-file "inputt" using #'read-line)
+       (iter (for line in-file "input18" using #'read-line)
              (collect line))))
 
 (defun map-at (mp r c)
@@ -504,9 +504,11 @@
 
 (defun entry-priority (num-keys)
   (lambda (entry)
-    (car entry)
     (+ (car entry) 
        (* 100 (- num-keys (length (cadr entry)))))))
+
+(defun map-char (mp) 
+  (lambda (coord) (map-at mp (car coord) (cdr coord))))
 
 (defun a-star (mp)
   (let* ((graph (make-reachable-graph mp))
@@ -524,16 +526,19 @@
           (format t "unlocked ~a~%" unlocked)
           (when (= (length unlocked) num-keys)
             (format t "NEW CANDIDATE ~a~%" moves-so-far))
-          (format t "REACHABLE ~a~%" (gethash current graph))
+;          (format t "REACHABLE ~a~%" (gethash current graph))
           (iter (for (other dist keys doors) in (gethash current graph))
 ;                (format t "OTHER ~a REMAINING ~a~%" other remaining)
-                (when (not (find other unlocked :test 'equal))
-                  (for ch = (find-in-map mp other))
-                  (format t "OTHER ~a DOORS ~a~%" ch doors)
-                  (when (subsetp doors unlocked :test 'equal)
+                (for ch = (find-in-map mp other))
+                (when (not (find (char-upcase ch) unlocked))
+;                  (format t "OTHER ~a DOORS ~a~%" ch doors)
+                  (when (subsetp (mapcar (lambda (d) (find-in-map mp d)) doors)
+                                 unlocked :test 'equal)
                                         ;                        (format t "OTHER ~a~%" (find-in-map mp other))
                     ;; (format t "KEYS ~a UNLOCKED ~a~%" keys unlocked)
-                    (for next-unlocked = (union keys unlocked :test 'equal))
+                    (for next-unlocked = (union (mapcar 
+                                                 (lambda (crd) (char-upcase (find-in-map mp crd)))
+                                                 keys) unlocked))
                     ;; (format t "NEXT UNLOCKED ~a~%" next-unlocked)
                     ;; (for next-remaining = (remove other 
                     ;;                               (set-difference remaining keys :test 'equal)
