@@ -462,6 +462,13 @@
                                            unlocked))
                   (insert-pq (list (+ moves-so-far dist) other next-unlocked next-seen) q))))))
 
+(defun estimate-remaining-cost (remaining graph)
+  (iter (for rm in remaining)
+        (for cost = (cdar (gethash rm graph)))
+        (maximize cost into mx)
+        (sum cost into sm)
+        (finally (return (- sm mx)))))
+
 (defun branch-and-bound (graph mp)
   (let ((bound *inf*)
         (num-keys (length (find-keys mp)))) 
@@ -478,7 +485,8 @@
                                    (travel-between current next unlocked remaining graph mp))
 ;                              (format t "NEXT MOVES ~a~%" next-moves)
                               (for chr = (find-in-map mp next))
-                              (when (<= (+ next-moves moves-so-far) bound)
+                              (when (<= (+ next-moves moves-so-far 
+                                           (estimate-remaining-cost remaining graph)) bound)
                                 (rec next next-remaining
                                      (+ next-moves moves-so-far) next-unlocked)))))))
       (rec (find-start-coord mp) (find-keys mp) 0 nil)
