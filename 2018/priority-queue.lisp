@@ -1,5 +1,11 @@
-(defun make-pq (cmp)
-  (list (make-array 5 :adjustable t :fill-pointer 1) 0 cmp))
+(defun make-pq (cmp &rest contents)
+  (let ((pq (list (make-array 5 :adjustable t :fill-pointer 1) 0 cmp)))
+    (loop for e in contents
+       do (insert-pq e pq))
+    pq))
+
+(defun pq-nonempty (pq)
+  (> (cadr pq) 0))
 
 (defun pq-empty (pq)
   (= (cadr pq) 0))
@@ -9,8 +15,9 @@
 
 (defun bubble-up (q index cmp)
   (loop while (and (> index 1)
-                   (funcall cmp (aref q index)
-                               (aref q (floor index 2))))
+                   (funcall cmp
+                            (aref q index)
+                            (aref q (floor index 2))))
      do (rotatef (aref q index) (aref q (floor index 2)))
        (setf index (floor index 2))))
 
