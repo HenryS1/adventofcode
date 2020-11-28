@@ -69,7 +69,10 @@
       distances)))
 
 (defun translate-char (ch num-keys)
-  (let ((result (cond ((or (char= ch #\@) (char= ch #\!) (char= ch #\&) (char= ch #\?)) ch)
+  (let ((result (cond ((char= ch #\@) (+ (* 2 num-keys) 0))
+                      ((char= ch #\!) (+ (* 2 num-keys) 1))
+                      ((char= ch #\&) (+ (* 2 num-keys) 2))
+                      ((char= ch #\?) (+ (* 2 num-keys) 3))
                       ((upper-case-p ch) (+ num-keys (- (char-code ch) 65)))
                       (t (- (char-code ch) 97)))))
     result))
@@ -130,10 +133,10 @@
          (loc-mask (find-loc-mask num-keys))
          (dist-to (make-hash-table))
          (pq (make-pq (dist-comp dist-offset))))
-    (iter (for nbr in-vector (gethash #\@ distances))
+    (iter (for nbr in-vector (gethash (* 2 num-keys) distances))
           (bind (((:values sep loc) (decode-bits nbr sep-offset loc-mask))
                  (new-state (make-state loc 0 position-offset)))
-            (when (or (< loc num-keys))
+            (when (< loc num-keys)
              (setf (gethash new-state dist-to) sep)
              (insert-pq (with-dist new-state sep dist-offset) pq))))
     (iter (while (pq-nonempty pq))
@@ -203,7 +206,7 @@
   (solve (read-map "input18")))
 
 (defun find-sep-offset-par (num-keys) 
-  (iter (for offset from 1)
+  (iter (for offset from 0)
         (for cur first 1 then (ash cur 1))
         (while (< cur (+ (* num-keys 2) 4)))
         (finally (return offset))))
@@ -222,19 +225,25 @@
 (defun get-positions-par (state position-offset position-mask position-size) 
   (let ((positions (ash state (- position-offset))))
     (values (logand position-mask positions)
-            (logand position-mask (ash positions position-size))
-            (logand position-mask (ash positions (* position-size 2)))
-            (logand position-mask (ash positions (* position-size 3))))))
+            (logand position-mask (ash positions (- position-size)))
+            (logand position-mask (ash positions (- (* position-size 2))))
+            (logand position-mask (ash positions (- (* position-size 3)))))))
 
-(defun make-state-par (position seen old-positions position-offset position-index position-mask position-size)
+(defun make-state-par (position seen seen-mask old-positions position-offset position-index position-mask position-size)
   (let ((shft (* position-size position-index)))
     (-<> (logxor old-positions (logand old-positions (ash position-mask shft)))
          (logxor <> (ash position shft))
          (ash <> position-offset)
-         (logior seen <>))))
+         (logior (logand seen-mask (logior seen (ash 1 position))) <>))))
 
 (defun get-all-positions (state position-offset)
   (ash state (- position-offset)))
+
+(defun init-positions (num-keys position-size)
+  (logior (* num-keys 2)
+          (ash (+ 1 (* num-keys 2)) position-size)
+          (ash (+ 2 (* num-keys 2)) (* position-size 2))
+          (ash (+ 3 (* num-keys 2)) (* position-size 3))))
 
 (defun explore-par (distances num-keys)
   (let* ((seen-mask (make-seen-mask num-keys))
@@ -248,24 +257,81 @@
          (loc-mask (find-loc-mask num-keys))
          (dist-to (make-hash-table))
          (pq (make-pq (dist-comp dist-offset))))
-    (iter (for nbr in-vector (gethash #\@ distances))
-          (bind (((:values sep loc) (decode-bits nbr sep-offset loc-mask))
-                 (new-state (make-state-par loc 0 position-offset)))
-            (when (or (< loc num-keys))
-              ;; (format t "initialising nbr ~a dist ~a loc ~a new-state ~a~%" (write-to-string nbr :base 2) sep loc (write-to-string new-state :base 2))
-             (setf (gethash new-state dist-to) sep)
-             (insert-pq (with-dist new-state sep dist-offset) pq))))
-    (iter (while (pq-nonempty pq))
-          (for state-dist = (pop-pq pq))
-          (for state = (get-state state-dist state-mask))
-          (when (all-visited state keys-mask)
-            (return (get-dist state-dist dist-offset)))
-          (for position = (get-position state position-offset))
-          (iter (for nbr in-vector (gethash position distances))
+    (iter (with init-pos = (init-positions num-keys position-size))
+          (for strt in-vector #(0 1 2 3))
+          (iter (for nbr in-vector (gethash (+ (* num-keys 2) strt) distances))
                 (bind (((:values sep loc) (decode-bits nbr sep-offset loc-mask))
-                       (new-state (make-state loc (get-seen state seen-mask) position-offset))
-                       (new-dist (+ sep (get-dist state-dist dist-offset))))
-                  (when (and (< new-dist (gethash new-state dist-to inf))
-                             (or (< loc num-keys) (> (logand (ash 1 (- loc num-keys)) new-state) 0)))
-                    (setf (gethash new-state dist-to) new-dist)
-                    (insert-pq (with-dist new-state new-dist dist-offset) pq)))))))
+                       (new-state (make-state-par loc 0 seen-mask init-pos position-offset strt
+                                                  position-mask position-size)))
+                  (when (< loc num-keys)
+                    (setf (gethash new-state dist-to) sep)
+                    (insert-pq (with-dist new-state sep dist-offset) pq)))))
+    (labels ((enqueue-nbrs (position position-index state state-dist)
+               (iter (for nbr in-vector (gethash position distances))
+                     (bind (((:values sep loc) (decode-bits nbr sep-offset loc-mask))
+                            (new-state (make-state-par loc (get-seen state seen-mask) seen-mask 
+                                                       (get-all-positions state position-offset)
+                                                       position-offset position-index
+                                                       position-mask position-size))
+                            (new-dist (+ sep (get-dist state-dist dist-offset))))
+                      (when (and (< new-dist (gethash new-state dist-to inf))
+                                 (or (< loc num-keys) 
+                                     (> (logand (ash 1 (- loc num-keys)) new-state) 0)))
+                        (setf (gethash new-state dist-to) new-dist)
+                        (insert-pq (with-dist new-state new-dist dist-offset) pq))))))
+      (iter (while (pq-nonempty pq))
+            (for state-dist = (pop-pq pq))
+            (for state = (get-state state-dist state-mask))
+            (when (all-visited state keys-mask)
+              (return (get-dist state-dist dist-offset)))
+            (multiple-value-bind (p1 p2 p3 p4) (get-positions-par state position-offset 
+                                                                  position-mask position-size)
+              (enqueue-nbrs p1 0 state state-dist) (enqueue-nbrs p2 1 state state-dist)
+              (enqueue-nbrs p3 2 state state-dist) (enqueue-nbrs p4 3 state state-dist))))))
+
+(defun solve-par (mp)
+  (let* ((locs (locations mp))
+         (num-keys (count-keys mp))
+         (distances (-<> (find-distances locs mp) (bittify <> (find-sep-offset num-keys) num-keys))))
+    (explore-par distances num-keys)))
+
+(defun test-par-1 ()
+  (solve-par #("#######"
+               "#a.#Cd#"
+               "##@#!##"
+               "#######"
+               "##&#?##"
+               "#cB#Ab#"
+               "#######")))
+
+(defun test-par-2 ()
+  (solve-par #("###############"
+               "#d.ABC.#.....a#"
+               "######@#!######"
+               "###############"
+               "######&#?######"
+               "#b.....#.....c#"
+               "###############")))
+
+(defun test-par-3 ()
+  (solve-par #("#############"
+               "#DcBa.#.GhKl#"
+               "#.###@#!#I###"
+               "#e#d#####j#k#"
+               "###C#&#?###J#"
+               "#fEbA.#.FgHi#"
+               "#############")))
+
+(defun test-par-4 ()
+  (solve-par #("#############"
+               "#g#f.D#..h#l#"
+               "#F###e#E###.#"
+               "#dCba@#!BcIJ#"
+               "#############"
+               "#nK.L&#?G...#"
+               "#M###N#H###.#"
+               "#o#m..#i#jk.#"
+               "#############")))
+
+(defun part-2 ()
+  (solve-par (read-map "input18_par")))
