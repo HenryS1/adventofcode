@@ -1,4 +1,6 @@
 (eval-when (:compile-toplevel :load-toplevel)
+  (ql:quickload :trivia)
+  (ql:quickload :trivia.ppcre)
   (ql:quickload :cl-ppcre)
   (ql:quickload :iterate)
   (ql:quickload :anaphora)
@@ -9,7 +11,7 @@
   (load "../2018/priority-queue.lisp")) 
 
 (defpackage :day2
-  (:use :cl :cl-ppcre :cl-arrows :iterate :alexandria :anaphora :metabang-bind))
+  (:use :cl :cl-ppcre :cl-arrows :trivia :trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
 
 (in-package :day2)
 
@@ -25,21 +27,18 @@
         (collect line)))
 
 (defun check-rule (line)
-  (bind (((:values _ registers) (scan-to-strings "(\\d+)-(\\d+) (\\w): (\\w+)" line))
-         (mn (parse-integer (aref registers 0)))
-         (mx (parse-integer (aref registers 1)))
-         (c (aref (aref registers 2) 0))
-         (str (aref registers 3)))
-    (<= mn (count-if (lambda (ch) (char= c ch)) str) mx)))
+  (match line 
+    ((ppcre "(\\d+)-(\\d+) (\\w): (\\w+)" (read mn) (read mx) c str)
+     (<= mn (count-if (lambda (ch) (char= (aref c 0) ch)) str) mx))))
+
+(defun part-1 ()
+  (count-if #'check-rule (read-lines)))
 
 (defun check-index-rule (line)
-  (bind (((:values _ registers) (scan-to-strings "(\\d+)-(\\d+) (\\w): (\\w+)" line))
-         (mn (parse-integer (aref registers 0)))
-         (mx (parse-integer (aref registers 1)))
-         (c (aref (aref registers 2) 0))
-         (str (aref registers 3)))
-    (or (and (char= (aref str (- mn 1)) c) (char/= (aref str (- mx 1)) c))
-        (and (char= (aref str (- mx 1)) c) (char/= (aref str (- mn 1)) c)))))
+  (match line
+    ((ppcre "(\\d+)-(\\d+) (\\w): (\\w+)" (read mn) (read mx) c str)
+     (or (and (char= (aref str (- mn 1)) (aref c 0)) (char/= (aref str (- mx 1)) (aref c 0)))
+         (and (char= (aref str (- mx 1)) (aref c 0)) (char/= (aref str (- mn 1)) (aref c 0)))))))
 
 (defun part-2 ()
   (count-if #'check-index-rule (read-lines)))
