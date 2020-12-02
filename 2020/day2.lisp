@@ -31,14 +31,14 @@
     ((ppcre "(\\d+)-(\\d+) (\\w): (\\w+)" (read mn) (read mx) c str)
      (<= mn (count-if (lambda (ch) (char= (aref c 0) ch)) str) mx))))
 
-(defun part-1 ()
-  (count-if #'check-rule (read-lines)))
+(defun part-1 () (count-if #'check-rule (read-lines)))
 
 (defun check-index-rule (line)
   (match line
     ((ppcre "(\\d+)-(\\d+) (\\w): (\\w+)" (read mn) (read mx) c str)
-     (or (and (char= (aref str (- mn 1)) (aref c 0)) (char/= (aref str (- mx 1)) (aref c 0)))
-         (and (char= (aref str (- mx 1)) (aref c 0)) (char/= (aref str (- mn 1)) (aref c 0)))))))
+     (let ((one (char= (aref str (- mn 1)) (aref c 0)))
+           (other (char= (aref str (- mx 1)) (aref c 0))))
+       (or (and one (not other))
+           (and other (not one)))))))
 
-(defun part-2 ()
-  (count-if #'check-index-rule (read-lines)))
+(defun part-2 () (count-if #'check-index-rule (read-lines)))
