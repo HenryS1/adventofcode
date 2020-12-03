@@ -29,16 +29,16 @@
 
 (defun check-rule (line)
   (match line 
-    ((ppcre "(\\d+)-(\\d+) (\\w): (\\w+)" (read mn) (read mx) (vector c) str)
-     (<= mn (count c str) mx))))
+    ((ppcre "(\\d+)-(\\d+) (\\w): (\\w+)" (read min) (read max) (vector c) str)
+     (<= min (count c str) max))))
 
 (defun part-1 () (count-if #'check-rule (read-lines)))
 
 (defun check-index-rule (line)
   (match line
-    ((ppcre "(\\d+)-(\\d+) (\\w): (\\w+)" (read mn) (read mx) (vector c) str)
-     (let ((one (char= (aref str (- mn 1)) c))
-           (other (char= (aref str (- mx 1)) c)))
+    ((ppcre "(\\d+)-(\\d+) (\\w): (\\w+)" (read i) (read j) (vector c) str)
+     (let ((one (char= (aref str (- i 1)) c))
+           (other (char= (aref str (- j 1)) c)))
        (or (and one (not other))
            (and other (not one)))))))
 
