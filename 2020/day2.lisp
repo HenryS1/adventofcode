@@ -11,7 +11,8 @@
   (load "../2018/priority-queue.lisp")) 
 
 (defpackage :day2
-  (:use :cl :cl-ppcre :cl-arrows :trivia :trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
+  (:use :cl :cl-ppcre :cl-arrows :trivia :trivia.ppcre
+        :iterate :alexandria :anaphora :metabang-bind))
 
 (in-package :day2)
 
