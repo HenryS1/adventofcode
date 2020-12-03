@@ -30,7 +30,7 @@
 (defun check-rule (line)
   (match line 
     ((ppcre "(\\d+)-(\\d+) (\\w): (\\w+)" (read mn) (read mx) (vector c) str)
-     (<= mn (count-if (lambda (ch) (char= c ch)) str) mx))))
+     (<= mn (count c str) mx))))
 
 (defun part-1 () (count-if #'check-rule (read-lines)))
 
