@@ -39,7 +39,7 @@
         (for line in lines)
         (for (container . contained) = (read-bag line))
         (iter (for (name n) in contained)
-              (push container (gethash name graph)))
+              (push (car container) (gethash name graph)))
         (finally (return graph))))
 
 (defun find-containing-gold (graph)
@@ -48,9 +48,9 @@
                (iter (for other in (gethash name graph))
                      (when (not (gethash other seen))
                        (setf (gethash other seen) t)
-                       (dfs (car other))))))
+                       (dfs other)))))
       (dfs "shiny gold")
-      (values (hash-table-count seen) seen))))
+      (hash-table-count seen))))
 
 (defun make-contains-graph (lines)
   (iter (with graph = (make-hash-table :test 'equal))
