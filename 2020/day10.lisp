@@ -33,8 +33,9 @@
         (for j in jolts)
         (for jp previous j)
         (when jp 
-          (setf (gethash (- j jp) diffs)
-                (+ (gethash (- j jp) diffs 0) 1)))
+          (for diff = (- j jp))
+          (setf (gethash diff diffs)
+                (+ (gethash diff diffs 0) 1)))
         (finally (return (list (* (gethash 1 diffs) (+ 1 (gethash 3 diffs)))
                                (gethash 1 diffs) (+ 1 (gethash 3 diffs)))))))
 
@@ -53,7 +54,7 @@
       (rec (- (length nums) 1)))))
 
 (defun part-1 ()
-  (joltage-differences (read-lines)))
+  (car (joltage-differences (read-lines))))
 
 (defun part-2 ()
   (let ((ns (-<> (read-lines) (mapcar #'parse-integer <>) (sort <> #'<) (cons 0 <>))))
