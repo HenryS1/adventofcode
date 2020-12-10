@@ -57,5 +57,5 @@
 
 (defun part-2 ()
   (let ((ns (-<> (read-lines) (mapcar #'parse-integer <>) (sort <> #'<) (cons 0 <>))))
-    (-<> (reduce #'max ns) (+ <> 3) (list <>) 
-         (append ns <>) (map 'vector #'identity <>) (ways-to-join <>))))
+    (->> (reduce #'max ns) (+ 3) (list) 
+         (append ns) (map 'vector #'identity) (ways-to-join))))
