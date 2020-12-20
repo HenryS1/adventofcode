@@ -68,13 +68,6 @@
         (setf result (logior result (logand (ash 1 (- 9 i)) side)))
         (finally (return result))))
 
-(defun matching-orientations (side-number side other callback)
-  (iter (for i from 0 to 3)
-        (when (= (aref other i) side)
-          (transform other side-number i nil callback))
-        (when (= (flip-side (aref other i)) side)
-          (transform other side-number i t callback))))
-
 (defun matching-side (side-number)
   (mod (+ side-number 2) 4))
 
@@ -140,7 +133,38 @@
               (fits-right tile it)
               t))))
 
+(defun matching-orientations (side-number side other callback)
+  (iter (for i from 0 to 3)
+        (when (= (aref other i) side)
+          (transform other side-number i nil callback))
+        (when (= (flip-side (aref other i)) side)
+          (transform other side-number i t callback))))
+
+(defun fitting-matches (side-number side other coord grid callback)
+  (bind (((r c) coord))
+    (matching-orientations side-number side other
+                           (lambda (m) 
+                             (case side-number
+                               (0 (when (fits-with-neighbours m grid (cons (- r 1) c))
+                                    (funcall callback m)))
+                               (1 (when (fits-with-neighbours m grid (cons r (+ c 1)))
+                                    (funcall callback m)))
+                               (2 (when (fits-with-neighbours m grid (cons (+ r 1) c))
+                                    (funcall callback m)))
+                               (3 (when (fits-with-neighbours m grid (cons r (+ c 1)))
+                                    (funcall callback m))))))))
+
+
 (defun find-matching-tiles (tiles)
-  (let ((grid (make-hash-table :test 'equal)))
-    (labels ((rec (tile)
-               ())))))
+  (let ((grid (make-hash-table :test 'equal))
+        (used (make-hash-table :test 'equal))
+        solved)
+    (labels ((rec (tile coord)
+               (if (= (hash-table-count grid) (length tiles))
+                   grid
+                   (bind (((r c) coord))
+                     (when (not (gethash (cons (+ r 1) c) grid))
+                       (iter (for other in tiles)
+                             (when (not (gethash (aref other 4) used))
+                               (fitting-matches 0 (aref tile 0) other coord grid
+                                                (lambda (m) ()))))))))))))
