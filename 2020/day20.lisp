@@ -143,7 +143,7 @@
         (when (= (aref other i) (flip-side side))
           (format t "side-number ~a side ~a other ~a~%" side-number side other)
           (transform other side-number i nil callback))
-        (when (= (flip-side (aref other i)) (flip-side side))
+        (when (= (aref other i) side)
           (transform other side-number i t callback))))
 
 (defun fitting-matches (side-number tile other next-coord grid)
@@ -184,7 +184,7 @@
                      (let ((next-coord (move coord side-number)))
                        (when (not (gethash next-coord grid))
                          (format t "coord ~a next-coord ~a~%" coord next-coord)
-                         (iter (for diff from 0 to 1)
+                         (iter (for diff from 0 to 4)
                                (iter (for other in tiles)
                                      (when (not (gethash (aref other 4) used))
                                        (format t "fitting matches for side-number ~a~%" (mod (+ side-number diff) 4))
