@@ -6,19 +6,22 @@
    :trivia 
    :trivia.ppcre 
    :iterate 
+   :arrow-macros
    :alexandria 
    :anaphora 
    :metabang-bind
-   :aoc.datastructures))
+   :aoc.datastructures)
+  (:shadowing-import-from #:arrow-macros #:<>))
 
 (in-package :day13)
 
 (defun read-list (line)
   (let (*read-eval*)
-    (with-input-from-string (s (regex-replace-all 
-                                "," (regex-replace-all
-                                     "\\]" (regex-replace-all "\\[" line "(") ")") " "))
-      (read s))))
+    (-<> (regex-replace-all "\\[" line "(")
+      (regex-replace-all "\\]" <> ")")
+      (regex-replace-all "," <> " ")
+      (with-input-from-string (s <>)
+        (read s)))))
 
 (defun read-lines ()
   (iter (for line in-file "day13.input" using #'read-line)
@@ -48,7 +51,7 @@
         ((and (null p1) (null p2) 'e))
         ((null p1) 'lt)
         ((null p2) 'gt)
-        (t (error "unexpected"))))
+        (t 'gt)))
 
 (defun correct-order-indices (groups)
   (iter (for (one other) in groups)
@@ -58,10 +61,14 @@
       (collect i))))
 
 (defun part1 ()
-  (reduce #'+ (correct-order-indices (group-lines (read-lines)))))
+  (->> (read-lines)
+    (group-lines)
+    (correct-order-indices)
+    (reduce #'+)))
 
 (defun find-all-packets ()
-  (remove-if (lambda (l) (equal l 'empty)) (read-lines)))
+  (->> (read-lines)
+    (remove-if (lambda (l) (equal l 'empty)))))
 
 (defun find-divider-packets (packets)
   (iter (for p in packets)
@@ -70,6 +77,7 @@
       (collect i))))
 
 (defun part2 ()
-  (reduce #'* (find-divider-packets 
-    (sort (append '(((2)) ((6))) (find-all-packets))
-          (lambda (a b) (equal (compare-packets a b) 'lt))))))
+  (-<> (append '(((2)) ((6))) (find-all-packets))
+    (sort <> (lambda (a b) (equal (compare-packets a b) 'lt)))
+    (find-divider-packets <>)
+    (reduce #'* <>)))

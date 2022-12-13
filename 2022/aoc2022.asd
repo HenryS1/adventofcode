@@ -5,6 +5,7 @@
   :depends-on ("cl-ppcre" 
                "iterate"
                "anaphora" 
+               "arrow-macros"
                "metabang-bind"
                "alexandria"
                "trivia"
