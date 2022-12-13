@@ -1,14 +1,3 @@
-(eval-when (:compile-toplevel :load-toplevel)
-  (ql:quickload :cl-ppcre)
-  (ql:quickload :iterate)
-  (ql:quickload :anaphora)
-  (ql:quickload :metabang-bind)
-  (ql:quickload :alexandria)
-  (ql:quickload :trivia)
-  (ql:quickload :trivia.ppcre)
-  (load "../2018/queue.lisp")
-  (load "../2018/priority-queue.lisp")) 
-
 (defpackage :day4
   (:use :cl :cl-ppcre :trivia trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
 

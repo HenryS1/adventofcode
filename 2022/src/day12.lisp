@@ -1,16 +1,14 @@
-(eval-when (:compile-toplevel :load-toplevel)
-  (ql:quickload :cl-ppcre)
-  (ql:quickload :iterate)
-  (ql:quickload :anaphora)
-  (ql:quickload :metabang-bind)
-  (ql:quickload :alexandria)
-  (ql:quickload :trivia)
-  (ql:quickload :trivia.ppcre)
-  (load "../2018/queue.lisp")
-  (load "../2018/priority-queue.lisp")) 
-
 (defpackage :day12
-  (:use :cl :cl-ppcre :trivia trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
+  (:use 
+   :cl
+   :cl-ppcre
+   :trivia
+   :trivia.ppcre 
+   :iterate 
+   :alexandria 
+   :anaphora
+   :metabang-bind
+   :aoc.datastructures))
 
 (in-package :day12)
 
@@ -39,24 +37,6 @@
                      (and up (traversable current-char up) (cons (- r 1) c))
                      (and down (traversable current-char down) (cons (+ r 1) c))))))
 
-(defun make-queue (l)
-  (cons (reverse l) nil))
-
-(defun enqueue (e q)
-  (bind (((back . front) q))
-    (cons (cons e back) front)))
-
-(defun enqueue-all (es q)
-  (bind (((back . front) q))
-    (cons (append (reverse es) back) front)))
-
-(defun dequeue (q)
-  (bind (((back . front) q))
-    (if (null front)
-        (let ((new-front (reverse back)))
-          (cons (car new-front) (cons nil (cdr new-front))))
-        (cons (car front) (cons back (cdr front))))))
-
 (defun find-start (mp)
   (let ((rows (length mp))
         (cols (length (aref mp 0))))
@@ -67,9 +47,6 @@
                       (cons r c))
                      (t (rec r (+ c 1))))))
       (rec 0 0))))
-
-(defun q-empty (q)
-  (and (null (car q)) (null (cdr q))))
 
 (defun bfs (start mp)
   (let ((seen (make-hash-table :test 'equal)))

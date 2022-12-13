@@ -1,42 +1,21 @@
-(eval-when (:compile-toplevel :load-toplevel)
-  (ql:quickload :cl-ppcre)
-  (ql:quickload :iterate)
-  (ql:quickload :anaphora)
-  (ql:quickload :metabang-bind)
-  (ql:quickload :alexandria)
-  (ql:quickload :trivia)
-  (ql:quickload :trivia.ppcre)
-  (load "../2018/queue.lisp")
-  (load "../2018/priority-queue.lisp")) 
-
 (defpackage :day11
-  (:use :cl :cl-ppcre :trivia trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
+  (:use 
+   :cl 
+   :aoc.functional
+   :cl-ppcre 
+   :trivia 
+   :trivia.ppcre 
+   :iterate 
+   :alexandria 
+   :anaphora 
+   :metabang-bind
+   :aoc.datastructures))
 
 (in-package :day11)
 
 (defun read-lines ()
   (iter (for line in-file "day11.input" using #'read-line)
     (when (> (length line) 0) (collect line))))
-
-(defun take-drop (n l)
-  (if (or (= n 0) (null l)) 
-      (cons nil l)
-      (bind (((hd . tl) (take-drop (- n 1) (cdr l))))
-        (cons (cons (car l) hd) tl))))
-
-(defun make-queue (l)
-  (cons (reverse l) nil))
-
-(defun enqueue (e q)
-  (bind (((back . front) q))
-    (cons (cons e back) front)))
-
-(defun dequeue (q)
-  (bind (((back . front) q))
-    (if (null front)
-        (let ((new-front (reverse back)))
-          (cons (car new-front) (cons nil (cdr new-front))))
-        (cons (car front) (cons back (cdr front))))))
 
 (defun monkey-lcm (lines)
   (iter (for line in lines)
@@ -99,9 +78,6 @@
             (setf (aref monkeys dest-id) new-destination)
             monkeys)))))))
 
-(defun q-empty (q)
-  (and (null (car q)) (null (cdr q))))
-
 (defun monkey-turn (current monkeys)
   (match current 
     ((list id items _ _)
@@ -120,19 +96,16 @@
       monkeys
       (monkey-rounds (monkey-round monkeys) (- count 1))))
 
-(defun take (n l)
-  (subseq l 0 n))
-
 (defun part1 ()
-  (reduce #'* (take 2 (sort (map 'vector 
-                                 (lambda (monkey) 
-                                   (match monkey 
-                                     ((list _ _ inspect-count _) inspect-count)))
-                                 (monkey-rounds (read-monkeys (read-lines)) 20)) #'>))))
+  (reduce #'* (take-seq 2 (sort (map 'vector 
+                                     (lambda (monkey) 
+                                       (match monkey 
+                                         ((list _ _ inspect-count _) inspect-count)))
+                                     (monkey-rounds (read-monkeys (read-lines)) 20)) #'>))))
 
 (defun part2 ()
   (let ((lines (read-lines)))
-    (reduce #'* (take 2 (sort (map 'vector 
+    (reduce #'* (take-seq 2 (sort (map 'vector 
                                  (lambda (monkey) 
                                    (match monkey 
                                      ((list _ _ inspect-count _) inspect-count)))
