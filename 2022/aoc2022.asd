@@ -6,6 +6,7 @@
                "iterate"
                "anaphora" 
                "arrow-macros"
+               "fset"
                "metabang-bind"
                "alexandria"
                "trivia"
@@ -26,7 +27,8 @@
                  (:file "day10")
                  (:file "day11")
                  (:file "day12")
-                 (:file "day13"))))
+                 (:file "day13")
+                 (:file "day14"))))
   :description "Advent of Code 2022"
   :in-order-to ((test-op (test-op "aoc2022/tests"))))
 
