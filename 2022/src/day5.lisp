@@ -1,11 +1,31 @@
 (defpackage :day5
-  (:use :cl :cl-ppcre :trivia trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
+  (:use :cl :iterate :alexandria :anaphora :metabang-bind :pears))
 
 (in-package :day5)
 
-(defun read-lines ()
-  (iter (for line in-file "day5.input" using #'read-line)
-    (collect line)))
+(neat-lambda:enable-lambda-syntax)
+(currying:enable-currying-syntax)
+
+(defun parse-empty ()
+  (sequential (_ (seq "   ")) nil))
+
+(defun parse-crate ()
+  (sequential (_ (char1 #\[))
+              (crate (fmap #p(intern) (anyn 1)))
+              (_ (char1 #\]))
+              crate))
+
+(defun parse-row-entry ()
+  (orp (parse-empty)
+       (parse-crate)))
+
+(defun parse-row ()
+  (sequential (entries (sep-by (parse-row-entry) (char1 #\space)))
+              (_ (char1 #\newline))
+              entries))
+
+(defun ignore-line ()
+  (sequential (_ (many #l(not (newlinep %c)))) (_ (char1 #\newline)) nil))
 
 (defun transpose-crates (crates-rows)
   (if (null (car crates-rows))
@@ -13,25 +33,29 @@
       (cons (mapcar #'car crates-rows) 
             (transpose-crates (mapcar #'cdr crates-rows)))))
 
-(defun crates (lines)
-  (mapcar (lambda (col) (remove-if (lambda (s) (string= s "   ")) col))
-          (transpose-crates (iter (for line in lines)
-                              (for row = 
-                                   (match line
-                                     ((ppcre "(   |\\[\\w\\]) (   |\\[\\w\\]) (   |\\[\\w\\]) (   |\\[\\w\\]) (   |\\[\\w\\]) (   |\\[\\w\\]) (   |\\[\\w\\]) (   |\\[\\w\\]) (   |\\[\\w\\])"
-                                             c1 c2 c3 c4 c5 c6 c7 c8 c9)
-                                      (vector c1 c2 c3 c4 c5 c6 c7 c8 c9))
-                                     (t nil)))
-                              (while row)
-                              (collect (coerce row 'list))))))
+(defun parse-columns ()
+  (sequential (columns (fmap #l(coerce %rows 'list) (repeated (parse-row))))
+              (_ (ignore-line))
+              (mapcar #p(remove-if #'null) (transpose-crates columns))))
 
-(defun moves (lines)
-  (iter (for line in lines)
-    (for move = (match line
-                  ((ppcre "move (\\d+) from (\\d+) to (\\d+)"
-                          (read number) (read start) (read end))
-                   (list number (- start 1) (- end 1)))))
-    (when move (collect move))))
+(defun parse-move ()
+  (sequential (_ (seq "move "))
+              (number *positive-int*)
+              (_ (seq " from "))
+              (start *positive-int*)
+              (_ (seq " to "))
+              (end *positive-int*)
+              (list number (- start 1) (- end 1))))
+
+(defun parse-moves ()
+  (sep-by (parse-move) (char1 #\newline)))
+
+(defun parse-lines ()
+  (parse-file "day5.input" 
+              (sequential (columns (parse-columns))
+                          (_ (ignore-line))
+                          (moves (parse-moves))
+                          (cons columns moves))))
 
 (defun update-at (n new cols)
   (if (= n 0)
@@ -56,9 +80,7 @@
         (make-moves (move-crates n start end cols) (cdr moves)))))
 
 (defun part1 ()
-  (bind ((lines (read-lines))
-         (moves (moves lines))
-         (crates (crates lines)))
+  (bind (((crates . moves) (parse-lines)))
     (mapcar #'car (make-moves crates moves))))
 
 (defun move-crates-in-order (n start end cols)
@@ -73,7 +95,5 @@
         (make-moves-in-order (move-crates-in-order n start end cols) (cdr moves)))))
 
 (defun part2 ()
-  (bind ((lines (read-lines))
-         (moves (moves lines))
-         (crates (crates lines)))
+  (bind (((crates . moves) (parse-lines)) )
     (mapcar #'car (make-moves-in-order crates moves))))

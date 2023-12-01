@@ -25,3 +25,5 @@
   (if (or (null l) (= n 0))
       nil
       (cons (car l) (take (- n 1) (cdr l)))))
+
+

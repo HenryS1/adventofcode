@@ -170,6 +170,7 @@
          (max-y (max-y obstacles)))
     (move-sand-pyramid 
      (cons 500 0) 
-     (cons (cons (cons -100000000 (+ max-y 2)) (cons 1000000000 (+ max-y 2)))
-           obstacles) 0)))
+     (sort (cons (cons (cons -100000000 (+ max-y 2)) (cons 1000000000 (+ max-y 2)))
+                 obstacles)
+           #'compare-obstacles) 0)))
 

@@ -1,7 +1,12 @@
 (defpackage :day3
-  (:use :cl :cl-ppcre :trivia trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
+  (:use :cl :iterate :alexandria :anaphora :metabang-bind
+        :aoc.functional :pears
+        :arrow-macros)
+  (:shadowing-import-from #:arrow-macros #:<>))
 
 (in-package :day3)
+
+(currying:enable-currying-syntax)
 
 (defun priority (e)
   (loop for i from 1
@@ -9,38 +14,37 @@
         until (char= c e)
         finally (return i)))
 
-(defun read-lines ()
-  (iter (for line in-file "day3.input" using #'read-line)
-    (collect line)))
-
 (defun split-in-half (items)
   (cons (map 'list #'identity (subseq items 0 (floor (length items) 2)))
         (map 'list #'identity (subseq items (floor (length items) 2)))))
+
+(defun parse-lines ()
+  (parse-file "day3.input" (sep-by (many1 #'alpha-char-p) (char1 #\newline))))
 
 (defun occurring-in-both (items)
   (bind (((fst . snd) (split-in-half items)))
     (remove-duplicates (intersection fst snd))))
 
 (defun part1 ()
-  (reduce #'+ (mapcar (lambda (ps) (reduce #'+ ps))
-                      (mapcar (lambda (es) (mapcar #'priority es)) 
-                              (mapcar #'occurring-in-both (read-lines))))))
-
-(defun take-drop (n ls)
-  (labels ((rec (cur-n acc rest)
-             (if (or (null rest) (= cur-n 0)) 
-                 (cons (reverse acc) rest)
-                 (rec (- cur-n 1) (cons (car rest) acc) (cdr rest)))))
-    (rec n nil ls)))
+  (->> (mapcar #'occurring-in-both (parse-lines))
+    (mapcar #p(mapcar #'priority))
+    (mapcar #p(reduce #'+))
+    (reduce #'+)))
 
 (defun groups-of-3 (items)
-  (when items
-    (bind (((grp . rest) (take-drop 3 items)))
-      (cons grp (groups-of-3 rest))))) 
+  (parse-sequence items (repeated (fmap #l(coerce %result 'list) (anyn 3)))
+                  :output-type 'list)) 
 
-(defun find-badge (ls)
-  (let ((groups (mapcar (lambda (items) (map 'list #'identity items)) ls)))
-    (remove-duplicates (intersection (car groups) (intersection (cadr groups) (caddr groups))))))
+(defun find-badge (lines)
+  (let ((groups (mapcar #p(map 'list #'identity) lines)))
+    (->> (intersection (cadr groups) (caddr groups))
+      (intersection (car groups))
+      (remove-duplicates))))
 
 (defun part2 ()
-  (reduce #'+ (mapcar #'priority (flatten (mapcar #'find-badge (groups-of-3 (read-lines)))))))
+  (->> (parse-lines)
+    (groups-of-3)
+    (mapcar #'find-badge)
+    (flatten)
+    (mapcar #'priority)
+    (reduce #'+)))

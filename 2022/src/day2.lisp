@@ -1,13 +1,23 @@
 (defpackage :day2
-  (:use :cl :cl-ppcre :trivia trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
+  (:use :cl :trivia :pears :iterate :alexandria :anaphora :metabang-bind))
 
 (in-package :day2)
 
+(neat-lambda:enable-lambda-syntax)
+(currying:enable-currying-syntax)
+
+(defun parse-move ()
+  (fmap #p(intern) (manyn #l(member %c '(#\A #\B #\C #\X #\Y #\Z)) 1)))
+
+(defun parse-moves ()
+  (sep-by (sequential (opponent (parse-move))
+                      (_ (char1 #\space))
+                      (me (parse-move))
+                      (cons opponent me))
+          (char1 #\newline)))
+
 (defun read-lines ()
-  (iter (for line in-file "day2.input" using #'read-line)
-    (collect 
-        (match line ((ppcre "(\\w) (\\w)" (read enemy) (read me))
-                     (cons enemy me))))))
+  (parse-file "day2.input" (parse-moves)))
 
 (defun outcome (strategy)
   (match strategy 

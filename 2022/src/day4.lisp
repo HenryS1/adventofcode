@@ -1,14 +1,23 @@
 (defpackage :day4
-  (:use :cl :cl-ppcre :trivia trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
+  (:use :cl  :iterate :alexandria :anaphora :metabang-bind :pears))
 
 (in-package :day4)
 
-(defun read-lines ()
-  (iter (for line in-file "day4.input" using #'read-line)
-    (collect (match line
-                 ((ppcre "(\\d+)-(\\d+),(\\d+)-(\\d+)" 
-                         (read start1) (read end1) (read start2) (read end2))
-                  (cons (cons start1 end1) (cons start2 end2)))))))
+(neat-lambda:enable-lambda-syntax)
+
+(defun parse-section ()
+  (sequential (start *positive-int*)
+              (_ (char1 #\-))
+              (end *positive-int*)
+              (cons start end)))
+
+(defun parse-lines ()
+  (parse-file "day4.input" 
+              (sep-by (sequential (fst (parse-section))
+                                  (_ (char1 #\,))
+                                  (snd (parse-section))
+                                  (cons fst snd))
+                      (char1 #\newline))))
 
 (defun contains (one other)
   (bind (((start1 . end1) one)
@@ -19,12 +28,11 @@
   (or (contains one other) (contains other one)))
 
 (defun count-full-overlaps (lines)
-  (length (remove-if-not (lambda (elves) 
-                           (bind (((one . other) elves)) (fully-overlaps one other)))
+  (length (remove-if-not #l(bind (((one . other) %elves)) (fully-overlaps one other))
                          lines)))
 
 (defun part1 ()
-  (count-full-overlaps (read-lines)))
+  (count-full-overlaps (parse-lines)))
 
 (defun overlaps (one other)
   (bind (((start1 . end1) one)
@@ -35,9 +43,8 @@
         (<= start2 end1 end2))))
 
 (defun count-overlaps (lines)
-  (length (remove-if-not (lambda (elves)
-                           (bind (((one . other) elves)) (overlaps one other)))
+  (length (remove-if-not #l(bind (((one . other) %elves)) (overlaps one other))
                          lines)))
 
 (defun part2 ()
-  (count-overlaps (read-lines)))
+  (count-overlaps (parse-lines)))

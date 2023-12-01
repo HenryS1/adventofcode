@@ -47,7 +47,7 @@
                      (t 0)))
              (new-h (+ diff hd))
              (new-t (+ (tail-direction new-h tl) tl)))
-        (move-in-dir new-h new-t dir (- count 1) (adjoin new-t seen)))))
+        (move-in-dir new-h new-t dir (- count 1) (fset:with seen new-t)))))
 
 (defun move (steps)
   (labels ((rec (steps seen hd tl)
@@ -56,10 +56,10 @@
                  (bind (((new-h new-t new-seen) 
                          (move-in-dir hd tl (caar steps) (cdar steps) seen)))
                    (rec (cdr steps) new-seen new-h new-t)))))
-    (rec steps (list 0) 0 0)))
+    (rec steps (fset:set 0) 0 0)))
 
 (defun part1 ()
-  (length (move (read-lines))))
+  (fset:size (move (read-lines))))
 
 
 (defun move-all (es diff)
@@ -79,7 +79,7 @@
                           (R *right*)
                           (t 0)))
              (new-es (move-all es init-diff))
-             (new-seen (adjoin (car (last new-es)) seen)))
+             (new-seen (fset:with seen (car (last new-es)))))
         (move-all-count new-es dir (- count 1) new-seen))))
 
 (defun move-chain (steps &key (init-chain (list 0 0 0 0 0 0 0 0 0 0)))
@@ -89,7 +89,7 @@
                  (bind (((new-es . new-seen) 
                          (move-all-count es (caar steps) (cdar steps) seen)))
                    (rec (cdr steps) new-es new-seen)))))
-    (rec steps init-chain (list 0))))
+    (rec steps init-chain (fset:set 0))))
 
 (defun part2 ()
-  (length (move-chain (read-lines))))
+  (fset:size (move-chain (read-lines))))

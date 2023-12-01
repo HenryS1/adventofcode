@@ -2,31 +2,31 @@
   (:use 
    :aoc.functional
    :cl 
-   :cl-ppcre 
    :iterate 
    :alexandria 
    :anaphora 
+   :pears
    :metabang-bind))
 
 (in-package :day1)
 
-(defun read-lines ()
-  (iter (for line in-file "day1.input" using #'read-line)
-    (collect (parse-integer line :junk-allowed t))))
+(neat-lambda:enable-lambda-syntax)
+(currying:enable-currying-syntax)
 
-(defun group-elves (ns)
-  (labels ((rec (rem)
-             (when (not (null rem))
-               (bind (((e . rest) (take-drop-while rem #'numberp)))
-                 (cons e (rec (cdr rest)))))))
-    (rec ns)))
+(defun parse-elves ()
+  (sep-by (sep-by *positive-int* (char1 #\newline))
+                (manyn #'newlinep 2)))
+
+(defun read-elves ()
+  (parse-file "day1.input" (parse-elves)))
 
 (defun part1 ()
-  (let ((lines (read-lines)))
-    (reduce #'max (mapcar (lambda (e) (reduce #'+ e :initial-value 0)) 
-                        (group-elves lines)) :initial-value 0)))
+  (reduce #'max (mapcar #l(reduce #'+ %elf :initial-value 0) 
+                        (read-elves)) :initial-value 0))
 
 (defun part2 ()
-  (let* ((lines (read-lines))
-         (elves (mapcar (lambda (e) (reduce #'+ e)) (group-elves lines))))
+  (let* ((elves (mapcar #p(reduce #'+) (read-elves))))
     (reduce #'+ (take 3 (sort elves #'>)))))
+
+(neat-lambda:disable-lambda-syntax)
+(currying:disable-currying-syntax)

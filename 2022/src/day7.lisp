@@ -1,22 +1,21 @@
 (defpackage :day7
-  (:use :cl :cl-ppcre :trivia trivia.ppcre :iterate :alexandria :anaphora :metabang-bind))
+  (:use :cl :trivia :iterate :pears :alexandria :anaphora :metabang-bind))
 
 (in-package :day7)
 
-(defun parse-command (line)
-  (match line
-    ((ppcre "\\$ cd (.+)" dir)
-     (list 'cd dir))
-    ((ppcre "\\$ ls")
-     (list 'ls))
-    ((ppcre "dir (.+)" name)
-     (list 'dir name))
-    ((ppcre "(\\d+) (.+)" (read size) name)
-     (list 'file size name))))
+(neat-lambda:enable-lambda-syntax)
 
-(defun read-lines ()
-  (iter (for line in-file "day7.input" using #'read-line)
-    (collect (parse-command line))))
+(defun rest-of-line () (many #l(not (newlinep %c))))
+
+(defun parse-command ()
+  (orp (sequential (_ (seq "$ cd ")) (dirname (rest-of-line)) (list 'cd dirname))
+       (sequential (_ (seq "$ ls")) (list 'ls))
+       (sequential (_ (seq "dir ")) (dirname (rest-of-line)) (list 'dir dirname))
+       (sequential (size *positive-int*) (_ (char1 #\space)) (filename (rest-of-line)) 
+                   (list 'file size filename))))
+
+(defun parse-lines ()
+  (parse-file "day7.input" (sep-by (parse-command) (char1 #\newline))))
 
 (defun map-filesystem (commands)
   (let ((filesystem (make-hash-table :test 'equal)))
@@ -63,7 +62,7 @@
         subdirs)))
 
 (defun part1 ()
-  (let ((filesystem (map-filesystem (read-lines))))
+  (let ((filesystem (map-filesystem (parse-lines))))
     (compute-size filesystem)
     (reduce #'+ (mapcar (lambda (dir) (gethash 'size dir)) (find-small-directories filesystem)))))
 
@@ -79,7 +78,7 @@
       (rec filesystem))))
 
 (defun part2 ()
-  (let ((filesystem (map-filesystem (read-lines))))
+  (let ((filesystem (map-filesystem (parse-lines))))
     (compute-size filesystem)
     (reduce #'min (mapcar (lambda (dir) (gethash 'size dir)) 
              (eligible-directories-to-delete filesystem)))))
