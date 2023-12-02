@@ -95,7 +95,7 @@
         maximizing (gethash colour round 0)))
 
 (defun fewest-required-cubes (game)
-  (mapcar (lambda (colour) (fewest-required-cubes-for-colour game colour)) 
+  (mapcar #p(fewest-required-cubes-for-colour game)
           (list 'blue 'red 'green)))
 
 (defun power (game)
