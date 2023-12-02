@@ -17,12 +17,8 @@
 (neat-lambda:enable-lambda-syntax)
 (currying:enable-currying-syntax)
 
-(defun lines ()
-  (sep-by (many1 #'alphanumericp)
-          (one #'newlinep)))
-
 (defun read-lines ()
-  (parse-file "input1" (lines)))
+  (parse-file "input1" (lines (many1 #'alphanumericp))))
 
 (defun calibration-value (line)
   (let* ((only-numbers (remove-if-not #'digit-char-p line)))
@@ -30,7 +26,7 @@
        (digit-char-p (aref only-numbers (- (length only-numbers) 1))))))
 
 (defun total-calibration-value (lines)
-  (reduce (lambda (v line) (+ v (calibration-value line))) lines :initial-value 0))
+  (reduce #l(+ %1v (calibration-value %2line)) lines :initial-value 0))
 
 (defun part1 ()
   (total-calibration-value (read-lines)))

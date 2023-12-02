@@ -16,10 +16,12 @@
                "trivia.ppcre")
   :components ((:module "src"
                 :components
-                ((:file "day1")))
+                ((:file "day1")
+                 (:file "day2")))
                (:module "tests"
                 :components
-                ((:file "day1"))))
+                ((:file "day1")
+                 (:file "day2"))))
   :description "Advent of Code 2023")
 
 ;; (defsystem "aoc2022/tests"
