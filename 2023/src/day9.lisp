@@ -49,7 +49,7 @@
     (reduce #'+ (mapcar #'next-number sequences))))
 
 (defun previous-number (sequence)
-  (loop for d in (reverse (mapcar #l(car %differences) (repeated-differences sequence)))
+  (loop for d in (reverse (mapcar #'car (repeated-differences sequence)))
         for i = d then (- d i)
         finally (return i)))
 
