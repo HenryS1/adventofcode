@@ -207,7 +207,6 @@
         neighbours)
     (when (> (get-row coord) 0)
       (let ((new-coord (make-coord (- (get-row coord) 1) (get-col coord))))
-;        (format t "SEEN ~a LOOP-SET ~a~%" (gethash new-coord seen) (gethash new-coord loop-set))
         (when (and (not (gethash new-coord seen)) (not (gethash new-coord loop-set)))
           (push new-coord neighbours))))
     (when (< (get-row coord) (- rows 1))
