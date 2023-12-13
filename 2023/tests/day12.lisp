@@ -29,5 +29,4 @@
     (is = 4 (count-arrangements condition-record5))
     (is = 1 (count-arrangements condition-record6))
     (is = 1 (count-arrangements condition-record7))
-    (is = 1 (count-arrangements condition-record8))
-    ))
+    (is = 1 (count-arrangements condition-record8))))
