@@ -8,6 +8,8 @@
                "anaphora" 
                "arrow-macros"
                "fset"
+               "ironclad"
+               "flexi-streams"
                "metabang-bind"
                "alexandria"
                "trivia"
@@ -29,7 +31,8 @@
                  (:file "day10")
                  (:file "day11")
                  (:file "day12")
-                 (:file "day13")))
+                 (:file "day13")
+                 (:file "day14")))
                (:module "tests"
                 :components
                 ((:file "day1")
@@ -44,7 +47,8 @@
                  (:file "day10")
                  (:file "day11")
                  (:file "day12")
-                 (:file "day13"))))
+                 (:file "day13")
+                 (:file "day14"))))
   :description "Advent of Code 2023")
 
 ;; (defsystem "aoc2022/tests"
