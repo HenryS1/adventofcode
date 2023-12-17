@@ -19,6 +19,7 @@
   :components ((:module "src"
                 :components
                 ((:file "queue")
+                 (:file "priority-queue")
                  (:file "day1")
                  (:file "day2")
                  (:file "day3")
@@ -34,7 +35,8 @@
                  (:file "day13")
                  (:file "day14")
                  (:file "day15")
-                 (:file "day16")))
+                 (:file "day16")
+                 (:file "day17")))
                (:module "tests"
                 :components
                 ((:file "day1")
@@ -52,7 +54,8 @@
                  (:file "day13")
                  (:file "day14")
                  (:file "day15")
-                 (:file "day16"))))
+                 (:file "day16")
+                 (:file "day17"))))
   :description "Advent of Code 2023")
 
 ;; (defsystem "aoc2022/tests"
