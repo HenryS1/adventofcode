@@ -37,7 +37,8 @@
                  (:file "day15")
                  (:file "day16")
                  (:file "day17")
-                 (:file "day18")))
+                 (:file "day18")
+                 (:file "day19")))
                (:module "tests"
                 :components
                 ((:file "day1")
@@ -57,7 +58,8 @@
                  (:file "day15")
                  (:file "day16")
                  (:file "day17")
-                 (:file "day18"))))
+                 (:file "day18")
+                 (:file "day19"))))
   :description "Advent of Code 2023")
 
 ;; (defsystem "aoc2022/tests"
