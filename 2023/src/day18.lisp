@@ -211,237 +211,45 @@
            (push coord path)
         finally (return path)))
 
-(defun is-vertical (line-segment)
-  (= (get-col (car line-segment)) (get-col (cdr line-segment))))
+(defstruct line start end)
 
 (defun make-line-segment (one other)
   (cond ((< (get-row one) (get-row other))
-         (cons one other))
+         (make-line :start one :end other))
         ((< (get-col one) (get-col other))
-         (cons one other))
-        (t (cons other one))))
+         (make-line :start one :end other))
+        (t (make-line :start other :end one))))
 
 (defun make-line-segments (path)
   (loop for remaining = path then (cdr remaining)
         for first = (car remaining)
         for second = (cadr remaining)
         while second
-        for segment = (make-line-segment first second)
-        if (is-vertical segment)
-          collect segment into verticals
-        else collect segment into horizontals
-        finally (return (cons horizontals verticals))))
+        collect (make-line-segment first second)))
 
-(defun intersect-lines (horizontal vertical)
-  ;; (cond ((< (get-row (car vertical)) (get-row (car horizontal)) (get-row (cdr vertical)))
-  ;;        (make-coord (get-row (car horizontal)) (get-col (car vertical))))
-  ;;       ((< (get-col (car horizontal)) (get-col (car vertical)) (get-col (cdr horizontal)))
-  ;;        (make-coord (get-row (car horizontal)) (get-col (car vertical))))
-  ;;       (t nil))
-  (make-coord (get-row (car horizontal)) (get-col (car vertical))))
+(defun is-vertical (line-segment)
+  (= (get-col (line-start line-segment)) (get-col (line-end line-segment))))
 
-(defun intersect-all-lines (horizontals verticals)
-;  (format t "HORIZONTALS ~a VERTICALS ~a~%" horizontals verticals)
-  (loop with intersections = nil
-        for horizontal in horizontals
-        do (loop for vertical in verticals
-                 for intersection = (intersect-lines horizontal vertical)
-;                 do (format t "HORIZONTAL ~a VERTICAL ~a~%" horizontal vertical)
-                 when intersection
-                   do (push intersection intersections)
-;                      (format t "FOUND INTERSECTION~%")
-                 )
-        finally (return (mapcar #'car (hash-table-alist (make-set intersections))))))
+(defun is-horizontal (line)
+  (= (get-row (line-start line)) (get-row (line-end line))))
 
-(defun coord-less (one other)
-  (or (< (get-row one) (get-row other))
-      (and (= (get-row one) (get-row other))
-           (< (get-col one) (get-col other)))))
+;; (defun intersect-vertical-horizontal (vertical other)
+;;   ())
 
-(defun sort-coords (coords)
-  (sort coords #'coord-less))
-
-(defun find-all-sorted-vertices (instructions)
-  (bind ((path (find-vertices instructions))
-         ((horizontals . verticals) (make-line-segments path))
-         (intersections (intersect-all-lines horizontals verticals)))
-    (cons (sort-coords (mapcar #'car
-                               (hash-table-alist
-                                (make-set 
-                                 (append (cdr path) intersections))))) path)))
-
-
-(defun part2 ()
-  (bind ((instructions (read-hex-instructions-from-file "../tests/test-input18"))
-         (boundary (dig-trench instructions))
-         (boundary-set (make-set boundary)))
-    (fill-interior boundary boundary-set nil)))
-
-(defun group-by-row (intersections)
-  (loop with grouping = (make-hash-table)
-        for intersection in intersections
-        do (push intersection (gethash (get-row intersection) grouping))
-        finally (return (loop with ordered = (make-hash-table)
-                              for row being the hash-keys of grouping 
-                                using (hash-value group)
-                              do (setf (gethash row ordered) 
-                                       (sort group #'< :key #'get-col))
-                              finally (return ordered)))))
-
-(defun group-by-col (intersections)
-  (loop with grouping = (make-hash-table)
-        for intersection in intersections
-        do (push intersection (gethash (get-col intersection) grouping))
-        finally (return (loop with ordered = (make-hash-table)
-                              for col being the hash-keys of grouping 
-                              using (hash-value group)
-                              do (setf (gethash col ordered)
-                                       (sort group #'< :key #'get-row))
-                              finally (return ordered)))))
-
-(defun next-in-group (coord grouping)
-  (loop for remaining = grouping then (cdr remaining)
-        until (= coord (car remaining))
-        finally (return (cadr remaining))))
-
-(defstruct rectangle top-left top-right bottom-right bottom-left marking)
-
-(defun rectangle-from-top-left (vertex row-grouping col-grouping)
-  (let* ((top-right (next-in-group vertex (gethash (get-row vertex) row-grouping)))
-         (bottom-left (next-in-group vertex (gethash (get-col vertex) col-grouping))))
-    (when (and top-right bottom-left)
-      (let ((bottom-right (next-in-group top-right (gethash (get-col top-right) col-grouping))))
-        (when bottom-right
-          (make-rectangle :top-left vertex 
-                    :top-right top-right 
-                    :bottom-right bottom-right
-                    :bottom-left bottom-left))))))
-
-(defun rectangle-edges (rectangle)
-  (list (cons (rectangle-top-left rectangle) (rectangle-top-right rectangle))
-        (cons (rectangle-top-right rectangle) (rectangle-bottom-right rectangle))
-        (cons (rectangle-top-left rectangle) (rectangle-bottom-left rectangle))
-        (cons (rectangle-bottom-left rectangle) (rectangle-bottom-right rectangle))))
-
-(defun make-rectangles (intersections)
-  (bind ((grouped-by-row (group-by-row intersections))
-         (grouped-by-col (group-by-col intersections)))
-    (loop with grouped-by-edge = (make-hash-table :test 'equal)
-          for intersection in intersections
-          for rectangle = (rectangle-from-top-left intersection grouped-by-row grouped-by-col)
-          when rectangle
-          do (loop for edge in (rectangle-edges rectangle)
-                   do (push rectangle (gethash edge grouped-by-edge)))
-          when rectangle collect rectangle into rectangles
-          finally (return (cons grouped-by-edge rectangles)))))
-
-(defun make-edge (one other)
-  (if (coord-less one other)
-      (cons one other)
-      (cons other one)))
-
-(defun is-right (rectangle start end)
-  (or (and (= start (rectangle-top-left rectangle)) (= end (rectangle-top-right rectangle)))
-      (and (= start (rectangle-top-right rectangle)) (= end (rectangle-bottom-right rectangle)))
-      (and (= start (rectangle-bottom-right rectangle)) (= end (rectangle-bottom-left rectangle)))
-      (and (= start (rectangle-bottom-left rectangle)) (= end (rectangle-top-left rectangle)))))
-
-(defun mark-rectangles (rectangles-by-edge path)
-  (loop for remaining = path then (cdr remaining)
-        for first = (car remaining)
-        for second = (cadr remaining)
-        while second
-        for edge = (make-edge first second)
-        for rectangles = (gethash edge rectangles-by-edge)
-;        do (format t "EDGE ~a RECTANGLES ~a~%" edge rectangles)
-        do (loop for rectangle in rectangles
-                 if (is-right rectangle first second)
-                   do (setf (rectangle-marking rectangle) 'right)
-                 else do (setf (rectangle-marking rectangle) 'left))))
-
-(defun mark-neighbours (rectangles-by-edge rectangle)
-;  (format t "MARK NEIGHBOURS ~a~%" rectangle)
-  (loop for edge in (rectangle-edges rectangle)
-        do (loop for other in (gethash edge rectangles-by-edge)
-;;                 do (format t "NEIGHBOUR ~a~%" other)
-                 when (not (rectangle-marking other))
-                   do (setf (rectangle-marking other) 'right)
-                      (mark-neighbours rectangles-by-edge other))))
-
-(defun flood-fill (rectangles-by-edge rectangles)
-  (loop for rectangle in rectangles
-        when (equal (rectangle-marking rectangle) 'right)
-          do (mark-neighbours rectangles-by-edge rectangle)))
-
-(defun find-right-rectangles (instructions)
-  (bind (((vertices . path) (find-all-sorted-vertices instructions))
-         ((rectangles-by-edge . rectangles)
-          (make-rectangles vertices)))
-    (mark-rectangles rectangles-by-edge (reverse path))
-    (flood-fill rectangles-by-edge rectangles)
-    (let ((right-rectangles (remove-if-not #l(equal (rectangle-marking %rectangle) 'right)
-                                           rectangles)))
-      right-rectangles)))
-
-(defun rectangle-perimeter (rectangle)
-  (- (+ (* 2 (+ 1 (get-col (- (rectangle-top-right rectangle) (rectangle-top-left rectangle)))))
-        (* 2 (+ 1 (get-row (- (rectangle-bottom-left rectangle) (rectangle-top-left rectangle))))))
-     4))
-
-(defun rectangle-area-excluding-edges (rectangle)
-  (let ((width (+ 1 (get-col
-                     (- (rectangle-top-right rectangle)
-                        (rectangle-top-left rectangle)))))
-        (height (+ 1 (get-row 
-                      (- (rectangle-bottom-left rectangle)
-                         (rectangle-top-left rectangle))))))
-    (- (* width height)
-       (rectangle-perimeter rectangle))))
-
-(defun make-edge-set (rectangles)
-  (loop with set = (make-hash-table :test 'equal)
-        for rectangle in rectangles
-        do (loop for edge in (rectangle-edges rectangle)
-                 do (setf (gethash edge set) t))
-        finally (return set)))
-
-(defun edge-length (edge)
-  (let ((diff (- (cdr edge) (car edge))))
-    (+ 1 (max (get-col diff) (get-row diff)))))
-
-(defun total-area-of-rectangles (rectangles)
-  (let* ((area-sum (reduce #'+ (mapcar #'rectangle-area-excluding-edges rectangles)))
-         (edge-set (make-edge-set rectangles))
-         (edges-length (loop for edge being the hash-keys of edge-set 
-                             summing (edge-length edge))))
-    (+ edges-length area-sum)))
-
-(defun count-repeated-points (edge-set)
-  (let* ((edges (hash-table-keys edge-set))
-         (points (append (mapcar #'car edges) 
-                         (mapcar #'cdr edges)))
-         (counts (make-hash-table)))
-    (loop for point in points
-          do (setf (gethash point counts)
-                   (+ (gethash point counts 0) 1)))
-    (loop for count being the hash-values of counts
-          summing (- count 1))))
-
-(defun blah (instructions)
-  (total-area-of-rectangles (find-right-rectangles instructions)))
-
-;; (defun mark-rectangles (path grouped-by-vertex)
-;;   (loop for remaining = path then (cdr remaining)
-;;         for first = (car remaining)
-;;         for second = (cdr remaining)
-;;         while second
-;;         for ))
-
-;; (defun find-rectangles (sorted-vertices)
-;;   (let ((bounds (find-bounds sorted-vertices)))
-;;     (loop for row from (bounds-min-row bounds)
-;;             to (bounds-max-row bounds)
-;;           )))
+;; (defun intersect-lines (one other)
+;;   ;; (cond ((< (get-row (car vertical)) (get-row (car horizontal)) (get-row (cdr vertical)))
+;;   ;;        (make-coord (get-row (car horizontal)) (get-col (car vertical))))
+;;   ;;       ((< (get-col (car horizontal)) (get-col (car vertical)) (get-col (cdr horizontal)))
+;;   ;;        (make-coord (get-row (car horizontal)) (get-col (car vertical))))
+;;   ;;       (t nil))
+;;   (cond (((and (is-vertical one) (is-vertical other)) nil)
+;;          ((and (is-vertical one) (is-horizontal other)) (intersect-vertical-horizontal one other))
+;;          ((is-vertical one) (intersect-vertical one other))
+;;          ((is-horizontal one) (intersect-horizontal one other))
+;;          ((is-vertical other) (intersect-lines other one))
+;;          ((is-horizontal other) (intersect-lines other one))
+;;          (t (intersect-oblique one other))))
+;;   (make-coord (get-row (car horizontal)) (get-col (car vertical))))
 
 (neat-lambda:disable-lambda-syntax)
 (currying:disable-currying-syntax)
