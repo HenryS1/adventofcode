@@ -233,7 +233,22 @@
 (defun is-horizontal (line)
   (= (get-row (line-start line)) (get-row (line-end line))))
 
-;; (defun intersect-vertical-horizontal (vertical other)
+(defun intersect-vertical-horizontal (vertical horizontal)
+  (when (and (< (get-col (car horizontal)) (get-col (car vertical)) (get-col (cdr horizontal)))
+             (< (get-row (car vertical)) (get-row (car horizontal)) (get-row (cdr vertical))))
+    (cons (get-row (car horizontal)) (get-col (car vertical)))))
+
+;; (defun find-point-for-row (segment row)
+;;   (let ((direction (- (cdr segment) (car segment)))
+;;         (row-diff (- row (get-row (car segment)))))
+;;     (+ (car segment) (* (/ row-diff (get-row direction)) direction))))
+
+;; (defun find-point-for-col (segment col)
+;;   (let ((direction (- (cdr segment) (car segment)))
+;;         (col-diff (- col (get-col (car segment)))))
+;;     (+ (car segment) (* (/ col-diff (get-col direction)) direction))))
+
+;; (defun intersect-vertical (vertical other)
 ;;   ())
 
 ;; (defun intersect-lines (one other)
@@ -248,8 +263,9 @@
 ;;          ((is-horizontal one) (intersect-horizontal one other))
 ;;          ((is-vertical other) (intersect-lines other one))
 ;;          ((is-horizontal other) (intersect-lines other one))
-;;          (t (intersect-oblique one other))))
-;;   (make-coord (get-row (car horizontal)) (get-col (car vertical))))
+;;          (t (intersect-oblique one other)))))
+
+;   (make-coord (get-row (car horizontal)) (get-col (car vertical))))
 
 (neat-lambda:disable-lambda-syntax)
 (currying:disable-currying-syntax)

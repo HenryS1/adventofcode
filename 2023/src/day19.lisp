@@ -135,23 +135,20 @@
                                    (append (workflow-rules current-workflow) 
                                            not-applied-so-far))))))
                (loop with successful = nil
+                     for not-applied = not-applied-so-far then (cons rule not-applied)
                      for rule in (workflow-rules current-workflow)
                      for destination = (rule-destination rule)
-;;                     do (format t "RULE ~a~%" rule)
                      if (equal destination "A")
                        do (push (make-rule-combination 
                                  :applied (append (cons rule applied-so-far)
                                                   (mapcar #'not-applied-to-applied
-                                                          not-applied-so-far))) successful)
-;                          (format t "ACCEPTED ~a~%" successful)
+                                                          not-applied))) successful)
                      else do (let ((rest (when (not (equal destination "R"))
                                            (rec (gethash destination workflows)
                                                 (cons rule applied-so-far)
-                                                not-applied-so-far))))
-;                               (format t "REST ~a ~a~%" rest successful)
+                                                not-applied))))
                                (setf successful (append rest successful)))
                      finally (return (progn 
-;                                       (format t "RESULT ~a~%" (append successful default-result))
                                        (append successful default-result)))))))
     (rec (gethash "in" workflows) nil nil)))
 
@@ -212,7 +209,8 @@
   (cond ((> (car one) (car other)) (intersect-ranges other one))
         ((<= (car one) (car other) (cdr other) (cdr one)) other)
         ((<= (car one) (car other) (cdr one)) (cons (car other) (cdr one)))
-        (t nil)))
+        ((< (cdr one) (car other)) nil)
+        (t (error "Unexpected"))))
 
 (defun find-overlap (one other)
   (let ((for-x (intersect-ranges (available-per-slot-x one)
@@ -234,9 +232,7 @@
   (bind (((workflows . _) (read-instructions-from-file "../tests/test-input19"))
          (available-slots (mapcar #'combine-rules 
                                   (find-successful-combinations-of-rules workflows))))
-;    (find-successful-combinations-of-rules workflows)
-
-    
+  (mapcar #'combine-rules (find-successful-combinations-of-rules workflows))
     (-
      (reduce #'+ 
              (mapcar #'available-count
