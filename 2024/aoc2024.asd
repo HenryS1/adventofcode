@@ -19,7 +19,8 @@
                 :components
                 ((:file "queue")
                  (:file "priority-queue")
-                 (:file "day1")))
+                 (:file "day1")
+                 (:file "day2")))
                (:module "tests"
                 :components
                 ((:file "day1"))))
