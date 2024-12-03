@@ -20,7 +20,8 @@
                 ((:file "queue")
                  (:file "priority-queue")
                  (:file "day1")
-                 (:file "day2")))
+                 (:file "day2")
+                 (:file "day3")))
                (:module "tests"
                 :components
                 ((:file "day1"))))
