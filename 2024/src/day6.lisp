@@ -69,6 +69,7 @@
           while (not (would-exit index direction rows columns))
           for next-index = (next-index index direction columns)
           for next-location = (aref locations next-index)
+;          do (format t "~a~%" (list direction (floor index columns) (mod index columns) (aref locations index)))
           if (char= next-location #\#)
             do (setf direction (change-direction direction))
           else
@@ -84,14 +85,12 @@
   (let* ((visited (make-hash-table :test 'equal))
          (rows (route-rows route))
          (columns (route-columns route))
-         (locations (route-locations route))
-         path)
+         (locations (route-locations route)))
     (loop with index = start
           with direction = start-direction
           while (not (would-exit index direction rows columns))
           for next-index = (next-index index direction columns)
           for next-location = (aref locations next-index)
-          do (push (list direction (floor index columns) (mod index columns) (aref locations index)) path)
           when (gethash (cons index direction) visited)
             do (return t)
           do (setf (gethash (cons index direction) visited) t)
@@ -106,19 +105,30 @@
            (< (cdr one) (cdr other)))))
 
 (defun find-loops (route)
-  (let* ((visited (track-route route))
+  (let* ((visited (make-hash-table))
          (start (find-start-position route))
+         (rows (route-rows route))
+         (columns (route-columns route))
          (locations (route-locations route))
          (obstructions (make-hash-table)))
-    (loop for index being the hash-keys of visited
-          for c = (aref locations index)
-          when (char/= c #\^)
-          do (setf (aref locations index) #\#)
-             (when (and (not (gethash index obstructions)) 
-                        (detect-loop start 'up route))
-               (setf (gethash index obstructions) t))
-             (setf (aref locations index) c)
-          finally (return obstructions))))
+    (loop with index = start
+          with direction = 'up
+          while (not (would-exit index direction rows columns))
+          for next-index = (next-location index direction columns)
+          for next-location = (aref locations next-index)
+          if (char= next-location #\#)
+            do (setf direction (change-direction direction))
+          else 
+            do (when (not (gethash next-index visited))
+                 (setf (aref locations next-index) #\#)
+                 (when (detect-loop index direction route)
+                   (setf (gethash next-index obstructions) t))
+                 (setf (aref locations next-index) next-location))
+               (setf index next-index)
+          do (setf (gethash index visited) t)
+          finally (progn 
+                    (remhash start obstructions)
+                    (return obstructions)))))
 
 (defun part2 ()
   (let ((route (read-input "day6input")))
