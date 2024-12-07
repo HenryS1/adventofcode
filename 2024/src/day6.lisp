@@ -69,7 +69,6 @@
           while (not (would-exit index direction rows columns))
           for next-index = (next-index index direction columns)
           for next-location = (aref locations next-index)
-;          do (format t "~a~%" (list direction (floor index columns) (mod index columns) (aref locations index)))
           if (char= next-location #\#)
             do (setf direction (change-direction direction))
           else
