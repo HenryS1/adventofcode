@@ -38,10 +38,10 @@
 (declaim (inline next-index))
 (defun next-index (current direction columns)
   (case direction 
-    (up (- current columns))
-    (down (+ current columns))
-    (right (+ current 1))
-    (left (- current 1))))
+    (up (the fixnum (- current columns)))
+    (down (the fixnum (+ current columns)))
+    (right (the fixnum (+ current 1)))
+    (left (the fixnum (- current 1)))))
 
 (declaim (inline would-exit))
 (defun would-exit (current direction rows columns)
@@ -127,7 +127,7 @@
     (loop with index fixnum = start
           with direction = 'up
           while (not (would-exit index direction rows columns))
-          for next-index fixnum = (next-location index direction columns)
+          for next-index fixnum = (next-index index direction columns)
           for next-location character = (aref locations next-index)
           if (char= next-location #\#)
             do (setf direction (change-direction direction))

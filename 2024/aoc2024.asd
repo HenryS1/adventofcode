@@ -26,10 +26,7 @@
                  (:file "day5")
                  (:file "day6")
                  (:file "day7")
-                 (:flie "day8")))
-               (:module "tests"
-                :components
-                ((:file "day1"))))
+                 (:file "day8"))))
   :description "Advent of Code 2024")
 
 ;; (defsystem "aoc2022/tests"
