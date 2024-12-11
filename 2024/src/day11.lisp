@@ -42,32 +42,45 @@
             (the fixnum (* n 2024))))))
 
 (declaim (inline apply-rules-with-counts))
-(defun apply-rules-with-counts (stones)
+(defun apply-rules-with-counts (stones new-stones)
   (declare (optimize (speed 3)))
-  (let ((new-stones (make-hash-table :size (hash-table-size stones))))
-    (loop for stone  being the hash-keys of stones using (hash-value count)
-          do (multiple-value-bind (fst snd) (apply-rules stone)
-               (setf (the fixnum (gethash fst new-stones))
-                     (+ (the fixnum (gethash fst new-stones 0)) (the fixnum count)))
-               (when snd 
-                 (setf (the fixnum (gethash snd new-stones))
-                       (+ (the fixnum (gethash snd new-stones 0)) (the fixnum count))))))
-    new-stones))
+  (clrhash new-stones)
+  (loop for stone  being the hash-keys of stones using (hash-value count)
+        do (multiple-value-bind (fst snd) (apply-rules stone)
+             (setf (the fixnum (gethash fst new-stones))
+                   (+ (the fixnum (gethash fst new-stones 0)) (the fixnum count)))
+             (when snd 
+               (setf (the fixnum (gethash snd new-stones))
+                     (+ (the fixnum (gethash snd new-stones 0)) (the fixnum count))))))
+  new-stones)
+
+(declaim (inline next-stones))
+(defun next-stones (current-stones one-stones other-stones)
+  (declare (optimize (speed 3)))
+  (if (eq current-stones one-stones)
+      other-stones one-stones))
 
 (defun part1 ()
   (let ((input (read-input "day11input"))
-        (stones (make-hash-table)))
-    (loop for stone in input do (setf (gethash stone stones) 1))
-    (loop for current-stones = stones then (apply-rules-with-counts current-stones)
+        (one-stones (make-hash-table))
+        (other-stones (make-hash-table)))
+    (loop for stone in input do (setf (gethash stone one-stones) 1))
+    (loop for current-stones = one-stones then (next-stones current-stones one-stones other-stones)
+          for next-stones = (next-stones current-stones one-stones other-stones)
           for i from 0 to 24
+          do (apply-rules-with-counts current-stones next-stones)
           finally (return (loop for count being the hash-values of current-stones
-                                summing count)))))
+                                summing count fixnum)))))
 
 (defun part2 ()
   (let ((input (read-input "day11input"))
-        (stones (make-hash-table)))
-    (loop for stone in input do (setf (gethash stone stones) 1))
-    (loop for current-stones = stones then (apply-rules-with-counts current-stones)
+        (one-stones (make-hash-table :size 10000))
+        (other-stones (make-hash-table :size 10000)))
+    (loop for stone in input do (setf (gethash stone one-stones) 1))
+    (loop for current-stones = one-stones then (next-stones current-stones one-stones other-stones)
+          for next-stones = (next-stones current-stones one-stones other-stones)
           for i from 0 to 74
-          finally (return (loop for count fixnum being the hash-values of current-stones
+          do (apply-rules-with-counts current-stones next-stones)
+          finally (return (loop for count being the hash-values of current-stones
                                 summing count fixnum)))))
+
