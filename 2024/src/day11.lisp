@@ -30,8 +30,7 @@
 
 (declaim (inline apply-rules))
 (defun apply-rules (n)
-  (declare (optimize (speed 3))
-           (fixnum n))
+  (declare (optimize (speed 3)) (fixnum n))
   (if (= n 0)
       1
       (let ((len (number-length n)))
