@@ -31,7 +31,8 @@
                  (:file "day10")
                  (:file "day11")
                  (:file "day12")
-                 (:file "day13"))))
+                 (:file "day13")
+                 (:file "day14"))))
   :description "Advent of Code 2024")
 
 ;; (defsystem "aoc2022/tests"
