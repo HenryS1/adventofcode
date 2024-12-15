@@ -5,6 +5,7 @@
            :peek
            :poll
            :empty
+           :non-empty
            :pop))
 
 (in-package :queue)
