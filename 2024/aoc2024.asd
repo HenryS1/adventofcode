@@ -19,6 +19,7 @@
                 :components
                 ((:file "queue")
                  (:file "priority-queue")
+                 (:file "fixnum-pq")
                  (:file "day1")
                  (:file "day2")
                  (:file "day3")
@@ -32,7 +33,9 @@
                  (:file "day11")
                  (:file "day12")
                  (:file "day13")
-                 (:file "day14"))))
+                 (:file "day14")
+                 (:file "day15")
+                 (:file "day16"))))
   :description "Advent of Code 2024")
 
 ;; (defsystem "aoc2022/tests"
