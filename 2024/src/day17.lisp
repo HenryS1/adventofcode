@@ -62,9 +62,7 @@
                (2 (setf b (mod (combo-operand operand a b c) 8))
                 (incf i 2))
                (3 (if (/= a 0)
-                      (progn 
-;                        (format t "A ~a B ~a C ~a OUTPUT ~a~%" a b c output)
-                        (setf i operand))
+                      (setf i operand)
                       (incf i 2)))
                (4 (setf b (logxor b c))
                 (incf i 2))
@@ -74,61 +72,45 @@
                     (setf b result)
                     (incf i 2)))
                (7 (let ((result (floor a (ash 1 (combo-operand operand a b c)))))
-;                    (format t "A ~a C ~a OPERAND ~a COMBO OPERAND ~a DIV ~a RESULT ~a~%" a c operand (combo-operand operand a b c) (ash 1 (combo-operand operand a b c)) result)
                     (setf c result)
                     (incf i 2))))
-    ;         (format t "INSTRUCTION ~a OPERAND ~a A ~a B ~a C ~a~%" instruction operand a b c)
           finally (return output))))
 
 (defun part1 ()
   (let ((computer (read-input "day17input")))
-    (run-program computer)))
+   (reverse (run-program computer))))
+
+(defun prefix-equal (one other n)
+  (loop for i from 1 to n
+        for a in one for b across other
+        when (/= a b)
+          do (return nil)
+        finally (return t)))
 
 (defun find-periodic-digits (computer)
   (let ((target (reverse (computer-program computer))))
-    (loop with indices = nil
-          for target-index from 0
-          for target-number across target
-          for base-a = 1 then (+ base-a increment)
-          for increment = 7 then (* 8 increment)
-          for next-index = (loop for i from 0 
-                                 for index-diff = (loop for (i . increment-product)
-                                                          in indices 
-                                                        for j = increment-product 
-                                                          then (* j increment-product)
-                                                        do (format t "I ~a J ~a~%" i j)
-                                                        summing (* i j))
-                                 do (format t "INCREMENT ~a INDICES ~a~%" increment indices)
-                                    (format t "BASE A ~a INDEX ~a INDEX DIFF ~a~%" base-a i index-diff)
-                                    (setf (computer-a computer) (+ base-a i index-diff))
-                                    (let ((result (run-program computer)))
-                                      (format t "A ~a TARGET INDEX ~a TARGET NUMBER ~a OUTPUT ~a~%" 
-                                              (+ base-a i index-diff) target-index target-number result)
-                                      (setf (computer-a computer) (+ base-a i increment))
-                                      (format t "PLUS INCREMENT ~a ~a~%" 
-                                              (+ base-a i increment)
-                                              (run-program computer))
-                                      (when (= (nth target-index result) target-number)
-                                        (when (= target-index (- (length target) 1))
-                                          (format t "A ~a~%" (+ base-a i index-diff)))
-                                        (return i)))
-                                    (setf (computer-a computer) base-a))
-          do (push (cons next-index 8) indices)
-          do (format t "A ~a OUTPUT ~a~%" base-a (run-program computer))
-             ;; when (= (mod a (* 8 increment)) 0)
-             ;;   do (setf increment (* 8 increment))
-          finally (return indices))))
-
-(defun print-a-output ()
-  (let ((computer (read-input "day17input")))
-    (loop for a from 0 to 40000
-          do (setf (computer-a computer) a)
-             (format t "OUTPUT ~a~%" (run-program computer)))))
-
-(defun run-with-a (a)
-  (let* ((computer (read-input "day17input")))
-    (setf (computer-a computer) a)
-    (run-program computer)))
+    (labels ((rec (target-index increment a base-a selected-indices)
+               (if (= target-index (length target))
+                   a
+                   (loop for i from 0 
+                         for index-diff = (loop for i in selected-indices 
+                                                for j = 8 then (* j 8)
+                                                summing (* i j))
+                         do (setf (computer-a computer) (+ base-a i index-diff))
+                            (let ((result (run-program computer)))
+                              (setf (computer-a computer) (+ base-a i increment))
+                              (when (not (prefix-equal result target target-index))
+                                (return nil))
+                              (when (every #'= result target)
+                                (let ((result (rec (+ target-index 1) 
+                                                   (* increment 8)
+                                                   (+ base-a i index-diff)
+                                                   (+ base-a increment)
+                                                   (cons i selected-indices))))
+                                  (when result
+                                    (return result)))))
+                            (setf (computer-a computer) base-a)))))
+      (rec 0 7 1 1 nil))))
 
 (defun part2 ()
   (let* ((computer (read-input "day17input")))
