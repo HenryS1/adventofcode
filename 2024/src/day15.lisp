@@ -37,10 +37,11 @@
 
 (defun find-start (warehouse)
   (loop for c across (warehouse-locations warehouse)
-        for i from 0
+        for i fixnum from 0
         when (char= c #\@)
           do (return i)))
 
+(declaim (inline next-available-square))
 (defun find-next-available-square (locations current offset)
   (loop for index = (+ current offset) then (+ index offset)
         for c = (aref locations index)
@@ -57,11 +58,14 @@
         when (= column (- columns 1))
           do (format t "~%")))
 
+(declaim (inline gps-coordinate))
 (defun gps-coordinate (index columns)
+  (declare (optimize (speed 3)) (fixnum index columns))
   (let ((row (floor index columns))
         (column (mod index columns)))
-    (+ (* 100 row) column)))
+    (+ (the fixnum (* 100 row)) column)))
 
+(declaim (inline direction-offset))
 (defun direction-offset (direction columns)
   (case direction
     (#\^ (- columns))
@@ -121,7 +125,10 @@
                 (setf (aref locations (+ i 1)) #\]))))
     (make-warehouse :rows rows :columns (* 2 init-columns) :locations locations)))
 
+(declaim (inline find-positions-to-move-into))
 (defun find-positions-to-move-into (locations current-position offset)
+  (declare (optimize (speed 3)) ((simple-array character) locations)
+           (fixnum current-position offset))
   (let ((seen (make-hash-table))
         (q (make-queue current-position))
         (to-move-into nil))
@@ -133,44 +140,52 @@
                (#\. )
                (#\] 
                 (if (or (char= c #\@) (char= c #\[))
-                    (progn (when (not (gethash (+ index offset -1) seen))
-                             (enqueue (+ index offset -1) q)
-                             (setf (gethash (+ index offset -1) seen) t))
-                           (when (not (gethash (+ index offset) seen))
-                             (enqueue (+ index offset) q)
-                             (setf (gethash (+ index offset) seen) t)))
-                    (when (not (gethash (+ index offset) seen))
-                      (enqueue (+ index offset) q)
-                      (setf (gethash (+ index offset) seen) t))))
+                    (progn (when (not (gethash (the fixnum (+ index offset -1)) seen))
+                             (enqueue (the fixnum (+ index offset -1)) q)
+                             (setf (gethash (the fixnum (+ index offset -1)) seen) t))
+                           (when (not (gethash (the fixnum (+ index offset)) seen))
+                             (enqueue (the fixnum (+ index offset)) q)
+                             (setf (gethash (the fixnum (+ index offset)) seen) t)))
+                    (when (not (gethash (the fixnum (+ index offset)) seen))
+                      (enqueue (the fixnum (+ index offset)) q)
+                      (setf (gethash (the fixnum (+ index offset)) seen) t))))
                (#\[
                 (if (or (char= c #\@) (char= c #\]))
                     (progn 
-                      (when (not (gethash (+ index offset) seen))
-                        (enqueue (+ index offset) q)
-                        (setf (gethash (+ index offset) seen) t))
-                      (when (not (gethash (+ index offset 1) seen))
-                        (enqueue (+ index offset 1) q)
-                        (setf (gethash (+ index offset 1) seen) t)))
-                    (when (not (gethash (+ index offset) seen))
-                      (enqueue (+ index offset) q)
-                      (setf (gethash (+ index offset) seen) t)))))
-             (push (+ index offset) to-move-into)
+                      (when (not (gethash (the fixnum (+ index offset)) seen))
+                        (enqueue (the fixnum (+ index offset)) q)
+                        (setf (gethash (the fixnum (+ index offset)) seen) t))
+                      (when (not (gethash (the fixnum (+ index offset 1)) seen))
+                        (enqueue (the fixnum (+ index offset 1)) q)
+                        (setf (gethash (the fixnum (+ index offset 1)) seen) t)))
+                    (when (not (gethash (the fixnum (+ index offset)) seen))
+                      (enqueue (the fixnum (+ index offset)) q)
+                      (setf (gethash (the fixnum (+ index offset)) seen) t)))))
+             (push (the fixnum (+ index offset)) to-move-into)
           finally (return to-move-into))))
 
+(declaim (inline shift-right))
 (defun shift-right (locations current-position end-position)
+  (declare (optimize (speed 3)) ((simple-array character) locations) 
+           (fixnum current-position end-position))
   (loop for index from end-position downto (+ current-position 1)
         for previous-character = (aref locations (- index 1))
         do (setf (aref locations index) previous-character))
   (setf (aref locations current-position) #\.))
 
+(declaim (inline shift-left))
 (defun shift-left (locations current-position end-position)
+  (declare (optimize (speed 3)) ((simple-array character) locations) 
+           (fixnum current-position end-position))
   (loop for index from end-position to (- current-position 1)
         for previous-character = (aref locations (+ index 1))
         do (setf (aref locations index) previous-character))
   (setf (aref locations current-position) #\.))
 
+(declaim (inline shift-vertical))
 (defun shift-vertical (locations to-move-into offset)
-  (loop for index in to-move-into 
+  (declare (optimize (speed 3)) ((simple-array character) locations) (fixnum offset))
+  (loop for index fixnum in to-move-into 
         do (setf (aref locations index)
                  (aref locations (- index offset)))
            (setf (aref locations (- index offset)) #\.)))
@@ -178,9 +193,10 @@
 (defun move-with-wider-blocks (warehouse directions)
   (let ((columns (warehouse-columns warehouse))
         (locations (warehouse-locations warehouse)))
-    (loop with current = (find-start warehouse)
+    (declare (optimize (speed 3)) ((simple-array character) locations))
+    (loop with current fixnum = (find-start warehouse)
           for direction across directions
-          for offset = (direction-offset direction columns)
+          for offset fixnum = (direction-offset direction columns)
           for adjacent = (aref locations (+ current offset))
           do (cond ((char= adjacent #\.) 
                     (setf (aref locations (+ current offset)) #\@)
@@ -205,7 +221,7 @@
                           (shift-vertical locations positions-to-move-into offset)
                           (incf current offset))))))
     (loop for c across locations
-          for index from 0
+          for index fixnum from 0
           when (char= c #\[)
             summing (gps-coordinate index columns))))
 
